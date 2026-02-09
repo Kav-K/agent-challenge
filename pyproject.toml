@@ -28,7 +28,7 @@ keywords = ["agent", "challenge", "authentication", "llm", "captcha", "ai"]
 
 [project.urls]
 Homepage = "https://challenge.llm.kaveenk.com"
-Repository = "https://github.com/thekavklaw/agent-challenge"
+Repository = "https://github.com/Kav-K/agent-challenge"
 Documentation = "https://challenge.llm.kaveenk.com"
 
 [tool.setuptools.packages.find]
