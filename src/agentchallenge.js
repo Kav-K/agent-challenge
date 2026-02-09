@@ -544,13 +544,15 @@ export class AgentChallenge {
    * @param {string} [opts.difficulty='easy'] - "easy", "medium", or "hard"
    * @param {number} [opts.ttl=300] - Challenge TTL in seconds
    * @param {string[]} [opts.types] - Optional list of allowed challenge types
+   * @param {boolean} [opts.persistent=true] - Issue persistent tokens (false = challenge every time)
    */
-  constructor({ secret, difficulty = 'easy', ttl = 300, types = null } = {}) {
+  constructor({ secret, difficulty = 'easy', ttl = 300, types = null, persistent = true } = {}) {
     if (!secret || secret.length < 8) throw new Error('Secret must be at least 8 characters');
     this._secret = secret;
     this._difficulty = difficulty;
     this._ttl = ttl;
     this._types = types;
+    this._persistent = persistent;
 
     // Dynamic mode state
     this._dynamicEnabled = false;
@@ -692,6 +694,7 @@ export class AgentChallenge {
   gateSync({ token, challengeToken, answer } = {}) {
     // Mode 1: Persistent token
     if (token) {
+      if (!this._persistent) return { status: 'error', error: 'Persistent tokens are disabled' };
       if (this.verifyToken(token)) return { status: 'authenticated' };
       return { status: 'error', error: 'Invalid or expired token' };
     }
@@ -700,8 +703,11 @@ export class AgentChallenge {
     if (challengeToken && answer) {
       const result = this.verify(challengeToken, answer);
       if (result.valid) {
-        const newToken = this.createToken();
-        return { status: 'authenticated', token: newToken };
+        if (this._persistent) {
+          const newToken = this.createToken();
+          return { status: 'authenticated', token: newToken };
+        }
+        return { status: 'authenticated' };
       }
       return { status: 'error', error: result.error || 'Incorrect answer' };
     }
@@ -721,12 +727,16 @@ export class AgentChallenge {
    */
   async gate({ token, challengeToken, answer } = {}) {
     if (token) {
+      if (!this._persistent) return { status: 'error', error: 'Persistent tokens are disabled' };
       if (this.verifyToken(token)) return { status: 'authenticated' };
       return { status: 'error', error: 'Invalid or expired token' };
     }
     if (challengeToken && answer) {
       const result = this.verify(challengeToken, answer);
-      if (result.valid) return { status: 'authenticated', token: this.createToken() };
+      if (result.valid) {
+        if (this._persistent) return { status: 'authenticated', token: this.createToken() };
+        return { status: 'authenticated' };
+      }
       return { status: 'error', error: result.error || 'Incorrect answer' };
     }
     const challenge = await this.create();

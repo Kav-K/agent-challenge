@@ -181,6 +181,24 @@ ac = AgentChallenge(
 
 Dynamic mode generates a challenge with one LLM call and verifies the answer with another. Falls back to static challenges after 3 failures. Supports OpenAI, Anthropic, and Google Gemini — auto-detected from environment variables.
 
+## Challenge Every Time (No Persistent Tokens)
+
+By default, agents solve once and get a permanent token. To require a challenge on every request:
+
+```python
+ac = AgentChallenge(
+    secret="your-secret",
+    persistent=False,  # No tokens issued — challenge every time
+)
+```
+
+When `persistent=False`:
+- Solving a challenge returns `{ "status": "authenticated" }` with **no token**
+- Passing a saved token returns an error
+- Every request requires solving a new puzzle
+
+This is useful for high-security endpoints, rate-limited operations, or when you want proof of LLM capability on every call.
+
 ## Configuration
 
 ```python
@@ -189,6 +207,7 @@ ac = AgentChallenge(
     difficulty="medium",        # "easy" | "medium" | "hard" (default: "medium")
     ttl=300,                    # Challenge expiry in seconds (default: 300)
     types=["rot13", "caesar"],  # Restrict to specific challenge types
+    persistent=True,            # Issue permanent tokens (default: True)
     dynamic=False,              # Enable LLM-generated challenges
 )
 ```

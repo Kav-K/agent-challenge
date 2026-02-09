@@ -1,7 +1,7 @@
 {
   "name": "agent-challenge",
-  "version": "0.5.0",
-  "description": "LLM-solvable challenge-response authentication for AI agent APIs. Protect endpoints with reasoning puzzles. Stateless via HMAC tokens.",
+  "version": "0.6.0",
+  "description": "Drop-in LLM authentication for any API endpoint. Reasoning puzzles that agents solve once, then pass through forever. Stateless HMAC tokens, no database.",
   "main": "src/agentchallenge.js",
   "type": "module",
   "exports": {
@@ -9,7 +9,6 @@
   },
   "files": [
     "src/agentchallenge.js",
-    "README.md",
     "LICENSE"
   ],
   "keywords": [
@@ -21,7 +20,12 @@
     "ai",
     "reasoning",
     "hmac",
-    "stateless"
+    "stateless",
+    "api",
+    "middleware",
+    "express",
+    "security",
+    "token"
   ],
   "author": {
     "name": "KavKlaw",
