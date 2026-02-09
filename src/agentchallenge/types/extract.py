@@ -1,16 +1,16 @@
-"""Letter extraction challenge — extract every Nth letter from a string."""
+"""Letter extraction challenge — extract every Nth letter from a randomly generated string."""
 
 import random
+import string
 from typing import Tuple
 
-HIDDEN_WORDS = [
-    "HELLO", "WORLD", "AGENT", "CLOUD", "TOKEN",
-    "SMART", "BRAIN", "POWER", "GUARD", "PIXEL",
-    "FLAME", "STONE", "RIVER", "EAGLE", "MAGIC",
-    "LIGHT", "OCEAN", "PULSE", "FORGE", "QUEST",
-]
-
 FILLER_LETTERS = "BCDFGHJKLMNPQRSTVWXYZ"
+
+
+def _random_hidden_word() -> str:
+    """Generate a random 4-6 letter uppercase word."""
+    length = random.randint(4, 6)
+    return ''.join(random.choices(string.ascii_uppercase, k=length))
 
 
 def _interleave(word: str, n: int) -> str:
@@ -27,11 +27,9 @@ def _interleave(word: str, n: int) -> str:
 class ExtractChallenge:
     @staticmethod
     def generate() -> Tuple[str, str]:
-        word = random.choice(HIDDEN_WORDS)
+        word = _random_hidden_word()
         n = random.choice([2, 3])
-
         mixed = _interleave(word, n)
-
         ordinal = {2: "2nd", 3: "3rd"}[n]
         prompt = (
             f"Extract every {ordinal} letter from this string, starting from the 1st character: {mixed}\n"

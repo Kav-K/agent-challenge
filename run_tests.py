@@ -314,10 +314,18 @@ def _():
     ac = AgentChallenge(secret="integration-test-key")
     for _ in range(30):
         ch = ac.create(challenge_type="simple_math")
-        m = re.search(r"(\d+)\s*([+-])\s*(\d+)", ch.prompt)
-        assert m, f"Can't parse: {ch.prompt}"
-        a, op, b = int(m.group(1)), m.group(2), int(m.group(3))
-        answer = a + b if op == "+" else a - b
+        # Match +, -, × and multi-operand (a + b + c, a - b - c)
+        nums = [int(n) for n in re.findall(r'\d+', ch.prompt.split('?')[0])]
+        if '×' in ch.prompt:
+            answer = nums[0] * nums[1]
+        elif ch.prompt.count('+') >= 2:
+            answer = sum(nums)
+        elif ch.prompt.count('-') >= 2:
+            answer = nums[0] - sum(nums[1:])
+        elif '+' in ch.prompt:
+            answer = nums[0] + nums[1]
+        else:
+            answer = nums[0] - nums[1]
         result = ac.verify(token=ch.token, answer=str(answer))
         assert result.valid, f"Failed: {ch.prompt} -> {answer}: {result.error}"
 
@@ -404,10 +412,10 @@ def _():
         ctype, _, _ = generate_challenge(difficulty="easy")
         assert ctype in DIFFICULTY_MAP["easy"], f"{ctype} not in easy pool"
 
-@test("Hard covers all types (200 samples)")
+@test("Hard covers all types (500 samples)")
 def _():
     seen = set()
-    for _ in range(200):
+    for _ in range(500):
         ctype, _, _ = generate_challenge(difficulty="hard")
         seen.add(ctype)
     assert seen == set(CHALLENGE_TYPES.keys()), f"Missing: {set(CHALLENGE_TYPES.keys()) - seen}"

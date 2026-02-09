@@ -1,16 +1,11 @@
-"""ROT13 decode challenge — decode a ROT13-encoded word."""
+"""ROT13 decode challenge — decode a ROT13-encoded random string."""
 
 import random
+import string
 from typing import Tuple
 
-# Words that produce clear ROT13 results
-WORDS = [
-    "HELLO", "WORLD", "AGENT", "ROBOT", "CLOUD", "SMART",
-    "BRAIN", "LOGIC", "CYBER", "PIXEL", "TOKEN", "BLOCK",
-    "MAGIC", "POWER", "SPEED", "LIGHT", "GUARD", "MOUNT",
-    "FLAME", "STONE", "OCEAN", "RIVER", "STORM", "EAGLE",
-    "BRAVE", "LANCE", "QUEST", "FORGE", "DROID", "PULSE",
-]
+CONSONANTS = "BCDFGHJKLMNPQRSTVWXYZ"
+VOWELS = "AEIOU"
 
 
 def _rot13(text: str) -> str:
@@ -25,10 +20,23 @@ def _rot13(text: str) -> str:
     return ''.join(result)
 
 
+def _random_pronounceable(length: int) -> str:
+    """Generate a random pronounceable-ish uppercase string."""
+    result = []
+    for i in range(length):
+        if i % 2 == 0:
+            result.append(random.choice(CONSONANTS))
+        else:
+            result.append(random.choice(VOWELS))
+    return ''.join(result)
+
+
 class Rot13Challenge:
     @staticmethod
     def generate() -> Tuple[str, str]:
-        word = random.choice(WORDS)
+        length = random.randint(4, 7)
+        # Generate a random word and encode it
+        word = _random_pronounceable(length)
         encoded = _rot13(word)
         prompt = (
             f"Decode this ROT13-encoded string (each letter shifts 13 places back in the alphabet): {encoded}\n"

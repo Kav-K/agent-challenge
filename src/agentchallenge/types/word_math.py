@@ -1,9 +1,8 @@
-"""Word math challenge — spell out a number from letter codes or vice versa."""
+"""Word math challenges — various counting and word-based number puzzles."""
 
 import random
 from typing import Tuple
 
-# Map numbers to words
 NUM_WORDS = {
     0: "zero", 1: "one", 2: "two", 3: "three", 4: "four",
     5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine",
@@ -16,10 +15,11 @@ NUM_WORDS = {
 class WordMathChallenge:
     @staticmethod
     def generate() -> Tuple[str, str]:
-        variant = random.choice(["digit_to_word", "word_count", "char_count"])
+        variant = random.choice([
+            "digit_to_word", "char_count", "vowel_count", "digit_sum"
+        ])
 
         if variant == "digit_to_word":
-            # "What is 7 + 8 written as a word?"
             a = random.randint(1, 10)
             b = random.randint(1, 10)
             total = a + b
@@ -29,34 +29,32 @@ class WordMathChallenge:
             )
             return prompt, NUM_WORDS[total]
 
-        elif variant == "word_count":
-            # "How many words are in this sentence?"
-            sentences = [
-                ("The quick brown fox jumps", 5),
-                ("A robot walked into a bar", 6),
-                ("She sells sea shells by the shore", 7),
-                ("I think therefore I am", 5),
-                ("To be or not to be", 6),
-                ("All that glitters is not gold", 6),
-                ("The cat sat on the mat", 6),
-                ("One small step for a man", 6),
-                ("Every cloud has a silver lining", 6),
-                ("Time flies like an arrow", 5),
-            ]
-            sentence, count = random.choice(sentences)
+        elif variant == "char_count":
+            import string as _s
+            length = random.randint(4, 8)
+            word = ''.join(random.choices(_s.ascii_uppercase, k=length))
             prompt = (
-                f"How many words are in this sentence: \"{sentence}\"? "
+                f"How many letters are in the string \"{word}\"? "
+                f"Reply with ONLY the number, nothing else."
+            )
+            return prompt, str(len(word))
+
+        elif variant == "vowel_count":
+            import string as _s
+            length = random.randint(5, 9)
+            word = ''.join(random.choices(_s.ascii_uppercase, k=length))
+            count = sum(1 for c in word if c in 'AEIOU')
+            prompt = (
+                f"How many vowels (A, E, I, O, U) are in \"{word}\"? "
                 f"Reply with ONLY the number, nothing else."
             )
             return prompt, str(count)
 
-        else:
-            # "How many characters (letters only) in HELLO?"
-            words = ["PYTHON", "CYBER", "ROBOT", "AGENT", "CLOUD",
-                     "MAGIC", "POWER", "LIGHT", "OCEAN", "GUARD"]
-            word = random.choice(words)
+        else:  # digit_sum
+            num = random.randint(100, 9999)
+            total = sum(int(d) for d in str(num))
             prompt = (
-                f"How many letters are in the word \"{word}\"? "
+                f"What is the sum of the digits of {num}? "
                 f"Reply with ONLY the number, nothing else."
             )
-            return prompt, str(len(word))
+            return prompt, str(total)
