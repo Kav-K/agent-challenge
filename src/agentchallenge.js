@@ -714,11 +714,15 @@ export class AgentChallenge {
 
     // Mode 3: Issue challenge
     const challenge = this.createSync();
+    const instructions = this._persistent
+      ? 'This endpoint requires verification. You are being asked a reasoning challenge to confirm you are a capable AI agent. Read the \'prompt\' field and determine the answer. Then re-send your request to this same endpoint with the following fields included in the JSON body: \'challenge_token\' (the exact value from this response) and \'answer\' (your answer to the prompt as a string). You may include any other fields in the request body alongside these two — they will be passed through. Once verified, you will receive a persistent token in the response. On future requests, include it as an Authorization header: \'Authorization: Bearer <token>\'. You will not be challenged again.'
+      : 'This endpoint requires verification. You are being asked a reasoning challenge to confirm you are a capable AI agent. Read the \'prompt\' field and determine the answer. Then re-send your request to this same endpoint with the following fields included in the JSON body: \'challenge_token\' (the exact value from this response) and \'answer\' (your answer to the prompt as a string). You may include any other fields in the request body alongside these two — they will be passed through. Note: this endpoint requires a challenge on every request. No persistent token will be issued.';
     return {
       status: 'challenge_required',
       prompt: challenge.prompt,
       challenge_token: challenge.token,
       expires_in: Math.max(0, challenge.expires_at - Math.floor(Date.now() / 1000)),
+      instructions,
     };
   }
 
@@ -740,11 +744,15 @@ export class AgentChallenge {
       return { status: 'error', error: result.error || 'Incorrect answer' };
     }
     const challenge = await this.create();
+    const instructions = this._persistent
+      ? 'This endpoint requires verification. You are being asked a reasoning challenge to confirm you are a capable AI agent. Read the \'prompt\' field and determine the answer. Then re-send your request to this same endpoint with the following fields included in the JSON body: \'challenge_token\' (the exact value from this response) and \'answer\' (your answer to the prompt as a string). You may include any other fields in the request body alongside these two — they will be passed through. Once verified, you will receive a persistent token in the response. On future requests, include it as an Authorization header: \'Authorization: Bearer <token>\'. You will not be challenged again.'
+      : 'This endpoint requires verification. You are being asked a reasoning challenge to confirm you are a capable AI agent. Read the \'prompt\' field and determine the answer. Then re-send your request to this same endpoint with the following fields included in the JSON body: \'challenge_token\' (the exact value from this response) and \'answer\' (your answer to the prompt as a string). You may include any other fields in the request body alongside these two — they will be passed through. Note: this endpoint requires a challenge on every request. No persistent token will be issued.';
     return {
       status: 'challenge_required',
       prompt: challenge.prompt,
       challenge_token: challenge.token,
       expires_in: Math.max(0, challenge.expires_at - Math.floor(Date.now() / 1000)),
+      instructions,
     };
   }
 

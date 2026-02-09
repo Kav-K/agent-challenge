@@ -59,6 +59,7 @@ class GateResult:
     prompt: Optional[str] = None
     challenge_token: Optional[str] = None
     expires_in: Optional[int] = None
+    instructions: Optional[str] = None
     # Auth fields (when status == "authenticated" and newly issued)
     token: Optional[str] = None
     # Error fields
@@ -73,6 +74,8 @@ class GateResult:
             d["challenge_token"] = self.challenge_token
         if self.expires_in is not None:
             d["expires_in"] = self.expires_in
+        if self.instructions is not None:
+            d["instructions"] = self.instructions
         if self.token is not None:
             d["token"] = self.token
         if self.error is not None:
@@ -335,11 +338,36 @@ class AgentChallenge:
 
         # Mode 3: No token, no answer — issue a new challenge
         challenge = self.create()
+        instructions = (
+            "This endpoint requires verification. You are being asked a reasoning "
+            "challenge to confirm you are a capable AI agent. Read the 'prompt' field "
+            "and determine the answer. Then re-send your request to this same endpoint "
+            "with the following fields included in the JSON body: "
+            "'challenge_token' (the exact value from this response) and 'answer' "
+            "(your answer to the prompt as a string). You may include any other fields "
+            "in the request body alongside these two — they will be passed through. "
+            "Once verified, you will receive a persistent token in the response. "
+            "On future requests, include it as an Authorization header: "
+            "'Authorization: Bearer <token>'. You will not be challenged again."
+        )
+        if not self._persistent:
+            instructions = (
+                "This endpoint requires verification. You are being asked a reasoning "
+                "challenge to confirm you are a capable AI agent. Read the 'prompt' field "
+                "and determine the answer. Then re-send your request to this same endpoint "
+                "with the following fields included in the JSON body: "
+                "'challenge_token' (the exact value from this response) and 'answer' "
+                "(your answer to the prompt as a string). You may include any other fields "
+                "in the request body alongside these two — they will be passed through. "
+                "Note: this endpoint requires a challenge on every request. No persistent "
+                "token will be issued."
+            )
         return GateResult(
             status="challenge_required",
             prompt=challenge.prompt,
             challenge_token=challenge.token,
             expires_in=max(0, int(challenge.expires_at - time.time())),
+            instructions=instructions,
         )
 
     # ── Persistent Tokens ─────────────────────────────
