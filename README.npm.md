@@ -13,7 +13,18 @@
 
 ---
 
-Reasoning puzzles that any LLM solves through thinking alone. Add 4 lines to any Express route, and AI agents authenticate themselves — no CAPTCHAs, no manual API key setup, no database.
+## Why?
+
+You built an API. Now bots are hitting it — not the smart kind, the dumb kind. Automated scripts cycling through endpoints, low-effort crawlers scraping your data, spammy throwaway clients burning through your resources.
+
+Traditional CAPTCHAs block *everyone* who isn't a human in a browser. API keys require manual signup and approval flows. **agent-challenge** sits in the middle: it blocks automated scripts and low-capability bots while letting any competent LLM walk right through.
+
+The challenge requires actual reasoning — reversing strings, solving arithmetic, decoding ciphers. A real language model handles it instantly. A curl loop can't.
+
+- ✅ GPT-4, Claude, Gemini, Llama — pass instantly
+- ❌ Automated scripts, spammy bots, dumb wrappers — blocked
+
+It's the ultimate automated-script buster. If the other end can't think, it doesn't get in.
 
 ## Install
 
