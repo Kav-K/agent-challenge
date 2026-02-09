@@ -31,11 +31,11 @@ PROVIDERS = {
         "env_key": "OPENAI_API_KEY",
         "default_model": "gpt-4o-mini",
         "auth_header": lambda key: ("Authorization", f"Bearer {key}"),
-        "build_body": lambda model, messages: json.dumps({
+        "build_body": lambda model, messages, temperature: json.dumps({
             "model": model,
             "messages": messages,
-            "temperature": 1.0,
-            "max_tokens": 300,
+            "temperature": temperature,
+            "max_tokens": 400,
         }),
         "extract": lambda resp: resp["choices"][0]["message"]["content"].strip(),
     },
@@ -45,9 +45,10 @@ PROVIDERS = {
         "default_model": "claude-sonnet-4-20250514",
         "auth_header": lambda key: ("x-api-key", key),
         "extra_headers": {"anthropic-version": "2023-06-01"},
-        "build_body": lambda model, messages: json.dumps({
+        "build_body": lambda model, messages, temperature: json.dumps({
             "model": model,
-            "max_tokens": 300,
+            "max_tokens": 400,
+            "temperature": temperature,
             "messages": messages,
         }),
         "extract": lambda resp: resp["content"][0]["text"].strip(),
@@ -56,46 +57,89 @@ PROVIDERS = {
         "env_key": "GOOGLE_API_KEY",
         "default_model": "gemini-2.0-flash",
         "build_url": lambda model, key: f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}",
-        "build_body": lambda model, messages: json.dumps({
+        "build_body": lambda model, messages, temperature: json.dumps({
             "contents": [{"role": m["role"] if m["role"] != "assistant" else "model", "parts": [{"text": m["content"]}]} for m in messages],
-            "generationConfig": {"temperature": 1.0, "maxOutputTokens": 300},
+            "generationConfig": {"temperature": temperature, "maxOutputTokens": 400},
         }),
         "extract": lambda resp: resp["candidates"][0]["content"]["parts"][0]["text"].strip(),
     },
 }
 
-# ── Generation prompt ────────────────────────────────
+# ── Prompt Engineering ────────────────────────────────
+# Key techniques applied:
+# 1. Constrained output categories — only allow challenge types proven to verify well
+# 2. Explicit anti-patterns — list what NOT to generate
+# 3. Many diverse few-shot examples covering each allowed category
+# 4. Strict JSON output format with answer constraints
+# 5. Answer must be a single number, single word, or very short deterministic string
+# 6. Low temperature for verification (deterministic solving)
+# 7. Aggressive answer normalization for comparison
+# 8. Explicit "ANSWER:" prefix extraction from verifier
 
-GENERATE_PROMPT = """Generate a unique reasoning challenge for an AI agent to solve.
+GENERATE_PROMPT = """You are a challenge generator for AI agent authentication. Generate ONE unique reasoning challenge.
 
-Requirements:
-- The challenge must be solvable by reasoning/logic alone (no web search, no tools, no code execution)
-- There must be exactly ONE correct answer with no ambiguity
-- The answer should be short (a word, number, or short phrase)
-- Be creative — use wordplay, logic puzzles, ciphers, pattern recognition, math, etc.
-- Vary the difficulty: some easy, some tricky
-- DO NOT reuse common examples — generate something novel each time
+RULES (strict):
+1. The answer MUST be a single number OR a single word (1-2 words max). Never a sentence.
+2. The challenge MUST have exactly ONE objectively correct answer — no ambiguity.
+3. The challenge MUST be solvable by pure reasoning — no trivia, pop culture, or world knowledge.
+4. Include "Reply with ONLY the answer, nothing else." at the end of the prompt.
+5. SHOW YOUR WORK: Before writing the JSON, solve the challenge yourself step by step to verify the answer is correct. Write your work FIRST, then the JSON on the last line.
 
-Output format (strict JSON, no markdown):
-{"prompt": "the challenge text for the agent", "answer": "the correct answer"}
+ALLOWED categories (pick one randomly):
+- Arithmetic: multi-step math, order of operations, percentages
+- String manipulation: reverse strings, remove/replace characters, count letters
+- Pattern completion: number sequences with clear rules
+- Cipher/encoding: Caesar shift, letter-to-number mapping
+- Counting: count specific items in a given string
+- Sorting: alphabetize letters, sort numbers
 
-Example outputs (do NOT reuse these):
-{"prompt": "If you remove the first and last letter of STRANGE, what word remains?", "answer": "trang"}
-{"prompt": "What is the 7th prime number?", "answer": "17"}
-{"prompt": "Replace each vowel in ROBOT with the next vowel (A→E, E→I, I→O, O→U, U→A). What do you get?", "answer": "RUBUT"}
+FORBIDDEN (never generate):
+- Riddles, lateral thinking, "trick questions"
+- Challenges with multiple valid answers
+- Trivia or world knowledge
+- Full-sentence answers
+- Time/date/clock puzzles
+- Word association / "what am I"
 
-Generate one challenge now:"""
+EXAMPLES (DO NOT reuse — generate something novel):
+Working: 8×7=56, 3×9=27, 56-27=29
+{"prompt": "What is (8 × 7) - (3 × 9)? Reply with ONLY the answer, nothing else.", "answer": "29"}
 
-VERIFY_PROMPT_TEMPLATE = """Solve this challenge. Think step by step, then give ONLY the final answer on the last line.
+Working: ALGORITHM reversed → M-H-T-I-R-O-G-L-A
+{"prompt": "Reverse the string ALGORITHM. Reply with ONLY the answer, nothing else.", "answer": "MHTIROGLA"}
+
+Working: M-I-S-S-I-S-S-I-P-P-I, S appears at positions 4,5,7,8 → 4 times
+{"prompt": "In the string MISSISSIPPI, how many times does the letter S appear? Reply with ONLY the answer, nothing else.", "answer": "4"}
+
+Working: H=8, E=5, L=12, P=16, sum=8+5+12+16=41... wait, let me recount. H=8, E=5, L=12, P=16. 8+5=13, 13+12=25, 25+16=41.
+{"prompt": "If A=1, B=2, ..., Z=26, what is the value of H + E + L + P? Reply with ONLY the answer, nothing else.", "answer": "41"}
+
+Working: Remove A,E,I,O,U from EDUCATION → D,C,T,N
+{"prompt": "Remove all vowels from the word EDUCATION. Reply with ONLY the answer, nothing else.", "answer": "DCTN"}
+
+Working: P,A,R,K,I,N,G sorted → A,G,I,K,N,P,R
+{"prompt": "Sort these letters alphabetically: P, A, R, K, I, N, G. Reply with ONLY the answer, nothing else.", "answer": "AGIKNPR"}
+
+Now generate a NOVEL challenge — different from the examples above. Be creative with the specific values and words you choose. Show your work first, then the JSON on the final line:"""
+
+
+VERIFY_PROMPT = """Solve this challenge step by step. Show your work, then write your final answer on the LAST line prefixed with "ANSWER: ".
 
 Challenge: {prompt}
 
-Your final answer (just the answer, nothing else):"""
+Work through it carefully:"""
 
 
 # ── LLM caller ───────────────────────────────────────
 
-def _call_llm(provider_name: str, api_key: str, messages: list, model: Optional[str] = None, timeout: int = 15) -> str:
+def _call_llm(
+    provider_name: str,
+    api_key: str,
+    messages: list,
+    model: Optional[str] = None,
+    temperature: float = 1.0,
+    timeout: int = 15,
+) -> str:
     """Make a raw HTTP call to an LLM provider. Returns the text response."""
     provider = PROVIDERS[provider_name]
     model = model or provider["default_model"]
@@ -107,7 +151,7 @@ def _call_llm(provider_name: str, api_key: str, messages: list, model: Optional[
         url = provider["url"]
 
     # Build request
-    body = provider["build_body"](model, messages).encode("utf-8")
+    body = provider["build_body"](model, messages, temperature).encode("utf-8")
     req = Request(url, data=body, method="POST")
     req.add_header("Content-Type", "application/json")
 
@@ -132,6 +176,114 @@ def _call_llm(provider_name: str, api_key: str, messages: list, model: Optional[
         raise RuntimeError(f"LLM API connection error: {e.reason}")
 
 
+# ── Answer extraction & normalization ─────────────────
+
+def _extract_verifier_answer(text: str) -> str:
+    """Extract the answer from verifier response using multiple strategies."""
+    text = text.strip()
+
+    # Strategy 1: Look for explicit "ANSWER: ..." prefix (most reliable)
+    answer_match = re.search(r'ANSWER:\s*(.+?)(?:\n|$)', text, re.IGNORECASE)
+    if answer_match:
+        return answer_match.group(1).strip()
+
+    # Strategy 2: Look for "The answer is ..." or "Final answer: ..."
+    for pattern in [
+        r'(?:the\s+)?(?:final\s+)?answer\s+is[:\s]+(.+?)(?:\.|$)',
+        r'(?:final\s+)?answer[:\s]+(.+?)(?:\.|$)',
+    ]:
+        m = re.search(pattern, text, re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
+
+    # Strategy 3: Last non-empty line (fallback)
+    lines = [l.strip() for l in text.split('\n') if l.strip()]
+    if lines:
+        last = lines[-1]
+        # Strip common prefixes
+        for prefix in ['so ', 'therefore ', 'thus ', 'hence ', '= ', 'answer: ', 'result: ']:
+            if last.lower().startswith(prefix):
+                last = last[len(prefix):].strip()
+        return last
+
+    return text
+
+
+def _normalize_for_compare(answer: str) -> str:
+    """Aggressively normalize answer for comparison."""
+    s = answer.strip().lower()
+    # Remove surrounding quotes
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in ('"', "'"):
+        s = s[1:-1].strip()
+    # Remove trailing punctuation
+    s = s.rstrip('.!,;:')
+    # Remove common prefixes that verifiers add
+    for prefix in ['the answer is ', 'answer: ', 'result: ', 'it is ', "it's "]:
+        if s.startswith(prefix):
+            s = s[len(prefix):].strip()
+    # Remove surrounding quotes again (after prefix strip)
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in ('"', "'"):
+        s = s[1:-1].strip()
+    # Collapse whitespace
+    s = re.sub(r"\s+", " ", s)
+    # Remove spaces between single characters (e.g. "A G I K N P R" → "agiknpr")
+    if re.match(r'^[a-z]( [a-z])+$', s):
+        s = s.replace(' ', '')
+    return s
+
+
+def _answers_match(expected: str, actual: str) -> bool:
+    """Check if two answers match with aggressive normalization."""
+    a = _normalize_for_compare(expected)
+    b = _normalize_for_compare(actual)
+
+    if a == b:
+        return True
+
+    # Try numeric comparison (handles "30" vs "30.0")
+    try:
+        return abs(float(a) - float(b)) < 0.001
+    except (ValueError, TypeError):
+        pass
+
+    # Try without spaces at all
+    if a.replace(' ', '') == b.replace(' ', ''):
+        return True
+
+    # Try without commas (sorting answers: "1, 2, 3" vs "1,2,3")
+    if a.replace(', ', ',').replace(' ', '') == b.replace(', ', ',').replace(' ', ''):
+        return True
+
+    return False
+
+
+# ── Pre-validation ────────────────────────────────────
+
+def _pre_validate_challenge(prompt: str, answer: str) -> Optional[str]:
+    """Quick sanity checks before wasting an API call on verification.
+    Returns error string if invalid, None if OK."""
+
+    # Answer should be short
+    if len(answer.split()) > 4:
+        return f"Answer too long ({len(answer.split())} words): {answer!r}"
+
+    # Answer shouldn't be a sentence
+    if answer.endswith('.') and len(answer) > 10:
+        return f"Answer looks like a sentence: {answer!r}"
+
+    # Prompt should include the "reply with only" instruction
+    lower_prompt = prompt.lower()
+    if 'reply with only' not in lower_prompt and 'respond with only' not in lower_prompt:
+        return "Prompt missing 'reply with only' instruction"
+
+    # Reject riddles/trick questions
+    riddle_signals = ['what am i', 'what has', 'i am a', 'riddle', 'what can']
+    if any(sig in lower_prompt for sig in riddle_signals):
+        return "Detected riddle/trick question"
+
+    return None
+
+
 # ── Dynamic challenge generator ──────────────────────
 
 def generate_dynamic_challenge(
@@ -149,20 +301,28 @@ def generate_dynamic_challenge(
     """
     for attempt in range(max_retries):
         try:
-            # Step 1: Generate challenge
+            # Step 1: Generate challenge (high temperature for variety)
             raw = _call_llm(
                 provider_name, api_key,
                 [{"role": "user", "content": GENERATE_PROMPT}],
-                model=model, timeout=timeout,
+                model=model,
+                temperature=1.0,
+                timeout=timeout,
             )
 
-            # Parse JSON response (handle markdown code fences)
+            # Parse JSON from response — may have work/explanation before it
             raw = raw.strip()
-            if raw.startswith("```"):
-                raw = re.sub(r"^```(?:json)?\s*", "", raw)
-                raw = re.sub(r"\s*```$", "", raw)
+            # Remove markdown code fences
+            raw = re.sub(r"```(?:json)?\s*", "", raw)
+            raw = raw.replace("```", "")
+            # Find the JSON object (last {...} in the response)
+            json_matches = list(re.finditer(r'\{[^{}]*\}', raw))
+            if not json_matches:
+                logger.warning(f"Dynamic gen attempt {attempt+1}: no JSON found in response")
+                continue
+            json_str = json_matches[-1].group(0)  # Use last match (after work)
 
-            challenge_data = json.loads(raw)
+            challenge_data = json.loads(json_str)
             prompt = challenge_data.get("prompt", "").strip()
             expected_answer = challenge_data.get("answer", "").strip()
 
@@ -170,23 +330,31 @@ def generate_dynamic_challenge(
                 logger.warning(f"Dynamic gen attempt {attempt+1}: empty prompt/answer")
                 continue
 
-            # Step 2: Verify by solving with LLM
+            # Step 1.5: Pre-validate before spending another API call
+            pre_error = _pre_validate_challenge(prompt, expected_answer)
+            if pre_error:
+                logger.warning(f"Dynamic gen attempt {attempt+1}: pre-validation failed: {pre_error}")
+                continue
+
+            # Step 2: Verify by solving with LLM (low temperature for determinism)
             verify_response = _call_llm(
                 provider_name, api_key,
-                [{"role": "user", "content": VERIFY_PROMPT_TEMPLATE.format(prompt=prompt)}],
-                model=verify_model or model, timeout=timeout,
+                [{"role": "user", "content": VERIFY_PROMPT.format(prompt=prompt)}],
+                model=verify_model or model,
+                temperature=0.0,
+                timeout=timeout,
             )
 
-            # Extract just the last line as the answer
-            verify_answer = verify_response.strip().split("\n")[-1].strip()
+            # Extract answer using multiple strategies
+            verify_answer = _extract_verifier_answer(verify_response)
 
-            # Normalize both for comparison
-            norm_expected = _normalize_for_compare(expected_answer)
-            norm_verify = _normalize_for_compare(verify_answer)
-
-            if norm_expected == norm_verify:
-                logger.info(f"Dynamic challenge verified (attempt {attempt+1}): {prompt[:60]}...")
-                return prompt, expected_answer.lower()
+            # Compare with aggressive normalization
+            if _answers_match(expected_answer, verify_answer):
+                logger.info(
+                    f"Dynamic challenge verified (attempt {attempt+1}): "
+                    f"{prompt[:60]}... → {expected_answer}"
+                )
+                return prompt, _normalize_for_compare(expected_answer)
             else:
                 logger.warning(
                     f"Dynamic gen attempt {attempt+1}: verification mismatch "
@@ -206,16 +374,3 @@ def generate_dynamic_challenge(
 
     logger.warning("Dynamic challenge generation failed after all retries, falling back to static")
     return None
-
-
-def _normalize_for_compare(answer: str) -> str:
-    """Normalize answer for verification comparison — more lenient than token comparison."""
-    s = answer.strip().lower()
-    # Remove surrounding quotes
-    if len(s) >= 2 and s[0] == s[-1] and s[0] in ('"', "'"):
-        s = s[1:-1].strip()
-    # Remove trailing period
-    s = s.rstrip(".")
-    # Collapse whitespace
-    s = re.sub(r"\s+", " ", s)
-    return s

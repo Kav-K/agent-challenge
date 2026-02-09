@@ -248,14 +248,14 @@ const PROVIDERS = {
     host: 'api.openai.com', path: '/v1/chat/completions',
     envKey: 'OPENAI_API_KEY', defaultModel: 'gpt-4o-mini',
     headers: (key) => ({ Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }),
-    body: (model, messages) => JSON.stringify({ model, messages, temperature: 1.0, max_tokens: 300 }),
+    body: (model, messages, temperature = 1.0) => JSON.stringify({ model, messages, temperature, max_tokens: 400 }),
     extract: (resp) => resp.choices[0].message.content.trim(),
   },
   anthropic: {
     host: 'api.anthropic.com', path: '/v1/messages',
     envKey: 'ANTHROPIC_API_KEY', defaultModel: 'claude-sonnet-4-20250514',
     headers: (key) => ({ 'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }),
-    body: (model, messages) => JSON.stringify({ model, max_tokens: 300, messages }),
+    body: (model, messages, temperature = 1.0) => JSON.stringify({ model, max_tokens: 400, temperature, messages }),
     extract: (resp) => resp.content[0].text.trim(),
   },
   google: {
@@ -263,42 +263,65 @@ const PROVIDERS = {
     buildPath: (model, key) => `/v1beta/models/${model}:generateContent?key=${key}`,
     host: 'generativelanguage.googleapis.com',
     headers: () => ({ 'Content-Type': 'application/json' }),
-    body: (model, messages) => JSON.stringify({
+    body: (model, messages, temperature = 1.0) => JSON.stringify({
       contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : m.role, parts: [{ text: m.content }] })),
-      generationConfig: { temperature: 1.0, maxOutputTokens: 300 },
+      generationConfig: { temperature, maxOutputTokens: 400 },
     }),
     extract: (resp) => resp.candidates[0].content.parts[0].text.trim(),
   },
 };
 
-const GENERATE_PROMPT = `Generate a unique reasoning challenge for an AI agent to solve.
+const GENERATE_PROMPT = `You are a challenge generator for AI agent authentication. Generate ONE unique reasoning challenge.
 
-Requirements:
-- The challenge must be solvable by reasoning/logic alone (no web search, no tools, no code execution)
-- There must be exactly ONE correct answer with no ambiguity
-- The answer should be short (a word, number, or short phrase)
-- Be creative — use wordplay, logic puzzles, ciphers, pattern recognition, math, etc.
-- Vary the difficulty: some easy, some tricky
-- DO NOT reuse common examples — generate something novel each time
+RULES (strict):
+1. The answer MUST be a single number OR a single word (1-2 words max). Never a sentence.
+2. The challenge MUST have exactly ONE objectively correct answer — no ambiguity.
+3. The challenge MUST be solvable by pure reasoning — no trivia, pop culture, or world knowledge.
+4. Include "Reply with ONLY the answer, nothing else." at the end of the prompt.
+5. SHOW YOUR WORK: Before writing the JSON, solve the challenge yourself step by step to verify the answer is correct. Write your work FIRST, then the JSON on the last line.
 
-Output format (strict JSON, no markdown):
-{"prompt": "the challenge text for the agent", "answer": "the correct answer"}
+ALLOWED categories (pick one randomly):
+- Arithmetic: multi-step math, order of operations, percentages
+- String manipulation: reverse strings, remove/replace characters, count letters
+- Pattern completion: number sequences with clear rules
+- Cipher/encoding: Caesar shift, letter-to-number mapping
+- Counting: count specific items in a given string
+- Sorting: alphabetize letters, sort numbers
 
-Example outputs (do NOT reuse these):
-{"prompt": "If you remove the first and last letter of STRANGE, what word remains?", "answer": "trang"}
-{"prompt": "What is the 7th prime number?", "answer": "17"}
-{"prompt": "Replace each vowel in ROBOT with the next vowel (A→E, E→I, I→O, O→U, U→A). What do you get?", "answer": "RUBUT"}
+FORBIDDEN (never generate):
+- Riddles, lateral thinking, "trick questions"
+- Challenges with multiple valid answers
+- Trivia or world knowledge
+- Full-sentence answers
+- Time/date/clock puzzles
+- Word association / "what am I"
 
-Generate one challenge now:`;
+EXAMPLES (DO NOT reuse — generate something novel):
+Working: 8×7=56, 3×9=27, 56-27=29
+{"prompt": "What is (8 × 7) - (3 × 9)? Reply with ONLY the answer, nothing else.", "answer": "29"}
 
-function _callLLM(providerName, apiKey, messages, model, timeout = 15000) {
+Working: ALGORITHM reversed → M-H-T-I-R-O-G-L-A
+{"prompt": "Reverse the string ALGORITHM. Reply with ONLY the answer, nothing else.", "answer": "MHTIROGLA"}
+
+Working: M-I-S-S-I-S-S-I-P-P-I, S at positions 4,5,7,8 → 4 times
+{"prompt": "In the string MISSISSIPPI, how many times does the letter S appear? Reply with ONLY the answer, nothing else.", "answer": "4"}
+
+Working: H=8, E=5, L=12, P=16. 8+5=13, 13+12=25, 25+16=41
+{"prompt": "If A=1, B=2, ..., Z=26, what is the value of H + E + L + P? Reply with ONLY the answer, nothing else.", "answer": "41"}
+
+Working: Remove A,E,I,O,U from EDUCATION → D,C,T,N
+{"prompt": "Remove all vowels from the word EDUCATION. Reply with ONLY the answer, nothing else.", "answer": "DCTN"}
+
+Now generate a NOVEL challenge — different from the examples above. Be creative with the specific values and words you choose. Show your work first, then the JSON on the final line:`;
+
+function _callLLM(providerName, apiKey, messages, model, timeout = 15000, temperature = 1.0) {
   const provider = PROVIDERS[providerName];
   model = model || provider.defaultModel;
 
   return new Promise((resolve, reject) => {
     const path = provider.buildPath ? provider.buildPath(model, apiKey) : provider.path;
     const hdrs = provider.headers(apiKey);
-    const body = provider.body(model, messages);
+    const body = provider.body(model, messages, temperature);
 
     const req = httpsRequest({ hostname: provider.host, path, method: 'POST', headers: { ...hdrs, 'Content-Length': Buffer.byteLength(body) }, timeout }, (res) => {
       let data = '';
@@ -315,33 +338,84 @@ function _callLLM(providerName, apiKey, messages, model, timeout = 15000) {
   });
 }
 
+function _extractVerifierAnswer(text) {
+  text = text.trim();
+  // Strategy 1: "ANSWER: ..." prefix
+  const m1 = text.match(/ANSWER:\s*(.+?)(?:\n|$)/i);
+  if (m1) return m1[1].trim();
+  // Strategy 2: "The answer is ..."
+  const m2 = text.match(/(?:the\s+)?(?:final\s+)?answer\s+is[:\s]+(.+?)(?:\.|$)/i);
+  if (m2) return m2[1].trim();
+  // Strategy 3: Last non-empty line
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length) {
+    let last = lines[lines.length - 1];
+    for (const p of ['so ', 'therefore ', 'thus ', 'hence ', '= ', 'answer: ', 'result: ']) {
+      if (last.toLowerCase().startsWith(p)) last = last.slice(p.length).trim();
+    }
+    return last;
+  }
+  return text;
+}
+
 function _normalizeForCompare(answer) {
   let s = answer.trim().toLowerCase();
   if (s.length >= 2 && s[0] === s[s.length - 1] && (s[0] === '"' || s[0] === "'")) s = s.slice(1, -1).trim();
-  s = s.replace(/\.$/, '');
-  return s.replace(/\s+/g, ' ');
+  s = s.replace(/[.!,;:]+$/, '');
+  for (const p of ['the answer is ', 'answer: ', 'result: ', 'it is ', "it's "]) {
+    if (s.startsWith(p)) s = s.slice(p.length).trim();
+  }
+  if (s.length >= 2 && s[0] === s[s.length - 1] && (s[0] === '"' || s[0] === "'")) s = s.slice(1, -1).trim();
+  s = s.replace(/\s+/g, ' ');
+  if (/^[a-z]( [a-z])+$/.test(s)) s = s.replace(/ /g, '');
+  return s;
+}
+
+function _answersMatch(expected, actual) {
+  const a = _normalizeForCompare(expected), b = _normalizeForCompare(actual);
+  if (a === b) return true;
+  try { if (Math.abs(parseFloat(a) - parseFloat(b)) < 0.001) return true; } catch {}
+  if (a.replace(/ /g, '') === b.replace(/ /g, '')) return true;
+  if (a.replace(/, /g, ',').replace(/ /g, '') === b.replace(/, /g, ',').replace(/ /g, '')) return true;
+  return false;
+}
+
+function _preValidate(prompt, answer) {
+  if (answer.split(/\s+/).length > 4) return 'Answer too long';
+  if (!prompt.toLowerCase().includes('reply with only') && !prompt.toLowerCase().includes('respond with only')) return 'Missing reply instruction';
+  for (const sig of ['what am i', 'what has', 'i am a', 'riddle']) {
+    if (prompt.toLowerCase().includes(sig)) return 'Detected riddle';
+  }
+  return null;
 }
 
 async function generateDynamicChallenge(providerName, apiKey, model, verifyModel, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      let raw = await _callLLM(providerName, apiKey, [{ role: 'user', content: GENERATE_PROMPT }], model);
-      raw = raw.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
-
-      const data = JSON.parse(raw);
+      let raw = await _callLLM(providerName, apiKey, [{ role: 'user', content: GENERATE_PROMPT }], model, 15000);
+      // Remove markdown fences
+      raw = raw.replace(/```(?:json)?\s*/g, '').replace(/```/g, '');
+      // Find last JSON object (after chain-of-thought work)
+      const matches = [...raw.matchAll(/\{[^{}]*\}/g)];
+      if (!matches.length) continue;
+      const data = JSON.parse(matches[matches.length - 1][0]);
       const prompt = (data.prompt || '').trim();
       const expectedAnswer = (data.answer || '').trim();
       if (!prompt || !expectedAnswer) continue;
 
-      // Verify by solving
-      const verifyResp = await _callLLM(providerName, apiKey,
-        [{ role: 'user', content: `Solve this challenge. Think step by step, then give ONLY the final answer on the last line.\n\nChallenge: ${prompt}\n\nYour final answer (just the answer, nothing else):` }],
-        verifyModel || model
-      );
-      const verifyAnswer = verifyResp.trim().split('\n').pop().trim();
+      // Pre-validate
+      const preErr = _preValidate(prompt, expectedAnswer);
+      if (preErr) continue;
 
-      if (_normalizeForCompare(expectedAnswer) === _normalizeForCompare(verifyAnswer)) {
-        return { prompt, answer: expectedAnswer.toLowerCase() };
+      // Verify by solving (low temperature for determinism)
+      const verifyResp = await _callLLM(providerName, apiKey,
+        [{ role: 'user', content: `Solve this challenge step by step. Show your work, then write your final answer on the LAST line prefixed with "ANSWER: ".\n\nChallenge: ${prompt}\n\nWork through it carefully:` }],
+        verifyModel || model, 15000
+      );
+      const verifyAnswer = _extractVerifierAnswer(verifyResp);
+
+      if (_answersMatch(expectedAnswer, verifyAnswer)) {
+        return { prompt, answer: _normalizeForCompare(expectedAnswer) };
       }
     } catch (e) {
       // continue to next retry
