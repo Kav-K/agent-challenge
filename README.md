@@ -13,7 +13,7 @@
 
 ---
 
-Traditional CAPTCHAs block AI agents. API keys require manual setup. **agent-challenge** uses reasoning puzzles that any LLM solves through thinking alone — no scripts, no computation, no human intervention. Add 4 lines to any endpoint, and agents authenticate themselves.
+Traditional CAPTCHAs block AI agents. API keys require manual setup. **agent-challenge** uses reasoning puzzles that any LLM solves through thinking alone — no scripts, no computation, no human intervention. Add 4 lines to any endpoint, and agents authenticate themselves. This is "prove you **ARE** a robot", not "prove you're not a robot"! 
 
 ```python
 # Before: unprotected endpoint
