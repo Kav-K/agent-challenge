@@ -1,0 +1,39 @@
+{
+  "name": "agent-challenge",
+  "version": "0.5.0",
+  "description": "LLM-solvable challenge-response authentication for AI agent APIs. Protect endpoints with reasoning puzzles. Stateless via HMAC tokens.",
+  "main": "src/agentchallenge.js",
+  "type": "module",
+  "exports": {
+    ".": "./src/agentchallenge.js"
+  },
+  "files": [
+    "src/agentchallenge.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "agent",
+    "challenge",
+    "authentication",
+    "llm",
+    "captcha",
+    "ai",
+    "reasoning",
+    "hmac",
+    "stateless"
+  ],
+  "author": {
+    "name": "KavKlaw",
+    "email": "kavklawrevived@clawmail.cc"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thekavklaw/agent-challenge"
+  },
+  "homepage": "https://challenge.llm.kaveenk.com",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
