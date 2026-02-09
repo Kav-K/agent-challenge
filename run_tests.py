@@ -448,6 +448,196 @@ def _():
     assert not ac2.verify(token=ch1.token, answer="any").valid
 
 
+# ── Dynamic Mode Tests ────────────────────────────────
+
+print(f"\n🤖 Dynamic Mode")
+
+@test("Dynamic mode: enable requires API key")
+def _():
+    # Temporarily clear env keys
+    saved = {}
+    for env_var in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY"]:
+        saved[env_var] = os.environ.pop(env_var, None)
+    try:
+        ac = AgentChallenge(secret="test-dynamic-12345")
+        try:
+            ac.enable_dynamic_mode()
+            assert False, "Should have raised ValueError"
+        except ValueError as e:
+            assert "No API key" in str(e)
+    finally:
+        for k, v in saved.items():
+            if v is not None:
+                os.environ[k] = v
+
+@test("Dynamic mode: set_openai_api_key stores key")
+def _():
+    ac = AgentChallenge(secret="test-dynamic-12345")
+    result = ac.set_openai_api_key("sk-test-fake-key")
+    assert result is ac, "Should return self for chaining"
+    assert "openai" in ac._api_keys
+
+@test("Dynamic mode: set_anthropic_api_key stores key")
+def _():
+    ac = AgentChallenge(secret="test-dynamic-12345")
+    ac.set_anthropic_api_key("sk-ant-test")
+    assert "anthropic" in ac._api_keys
+
+@test("Dynamic mode: set_google_api_key stores key")
+def _():
+    ac = AgentChallenge(secret="test-dynamic-12345")
+    ac.set_google_api_key("AIza-test")
+    assert "google" in ac._api_keys
+
+@test("Dynamic mode: enable selects provider from key")
+def _():
+    ac = AgentChallenge(secret="test-dynamic-12345")
+    ac.set_openai_api_key("sk-fake")
+    ac.enable_dynamic_mode()
+    assert ac._dynamic_provider == "openai"
+    assert ac.dynamic_mode is True
+
+@test("Dynamic mode: disable works")
+def _():
+    ac = AgentChallenge(secret="test-dynamic-12345")
+    ac.set_openai_api_key("sk-fake")
+    ac.enable_dynamic_mode()
+    assert ac.dynamic_mode is True
+    ac.disable_dynamic_mode()
+    assert ac.dynamic_mode is False
+
+@test("Dynamic mode: provider preference openai > anthropic > google")
+def _():
+    # Temporarily clear env keys to test explicit-only behavior
+    saved = {}
+    for env_var in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY"]:
+        saved[env_var] = os.environ.pop(env_var, None)
+    try:
+        ac = AgentChallenge(secret="test-dynamic-12345")
+        ac.set_google_api_key("g-key")
+        ac.set_anthropic_api_key("a-key")
+        ac.enable_dynamic_mode()
+        assert ac._dynamic_provider == "anthropic", f"Expected anthropic, got {ac._dynamic_provider}"
+        ac2 = AgentChallenge(secret="test-dynamic-12345")
+        ac2.set_google_api_key("g-key")
+        ac2.enable_dynamic_mode()
+        assert ac2._dynamic_provider == "google", f"Expected google, got {ac2._dynamic_provider}"
+    finally:
+        for k, v in saved.items():
+            if v is not None:
+                os.environ[k] = v
+
+@test("Dynamic mode: explicit provider override")
+def _():
+    ac = AgentChallenge(secret="test-dynamic-12345")
+    ac.set_openai_api_key("sk-o")
+    ac.set_anthropic_api_key("sk-a")
+    ac.enable_dynamic_mode(provider="anthropic")
+    assert ac._dynamic_provider == "anthropic"
+
+@test("Dynamic mode: unknown provider rejected")
+def _():
+    ac = AgentChallenge(secret="test-dynamic-12345")
+    try:
+        ac.enable_dynamic_mode(provider="fakeprovider")
+        assert False
+    except ValueError as e:
+        assert "Unknown provider" in str(e)
+
+@test("Dynamic mode: chaining API")
+def _():
+    ac = AgentChallenge(secret="test-dynamic-12345")
+    result = (
+        ac.set_openai_api_key("sk-test")
+          .enable_dynamic_mode(model="gpt-4o-mini")
+    )
+    assert result is ac
+    assert ac.dynamic_mode is True
+    assert ac._dynamic_model == "gpt-4o-mini"
+
+@test("Dynamic mode: falls back to static on bad key")
+def _():
+    ac = AgentChallenge(secret="test-dynamic-12345")
+    ac.set_openai_api_key("sk-invalid-key-that-will-fail")
+    ac.enable_dynamic_mode()
+    # Should fall back to static without crashing
+    ch = ac.create()
+    assert ch.prompt
+    assert ch.token
+    assert ch.challenge_type != "dynamic"  # LLM call should fail, falling back
+
+@test("Dynamic mode: env var auto-detection")
+def _():
+    old = os.environ.get("OPENAI_API_KEY")
+    try:
+        os.environ["OPENAI_API_KEY"] = "sk-env-test"
+        ac = AgentChallenge(secret="test-dynamic-12345")
+        assert "openai" in ac._api_keys
+        assert ac._api_keys["openai"] == "sk-env-test"
+    finally:
+        if old is not None:
+            os.environ["OPENAI_API_KEY"] = old
+        else:
+            os.environ.pop("OPENAI_API_KEY", None)
+
+@test("Dynamic mode: specific type bypasses dynamic")
+def _():
+    ac = AgentChallenge(secret="test-dynamic-12345")
+    ac.set_openai_api_key("sk-invalid")
+    ac.enable_dynamic_mode()
+    ch = ac.create(challenge_type="simple_math")
+    assert ch.challenge_type == "simple_math"  # Static type, not dynamic
+
+# Live dynamic test — only runs if OPENAI_API_KEY is actually set
+OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
+if OPENAI_KEY and OPENAI_KEY.startswith("sk-"):
+    print(f"\n🔴 LIVE Dynamic Tests (using real OpenAI API)")
+
+    @test("LIVE: Dynamic challenge generation + verification")
+    def _():
+        ac = AgentChallenge(secret="live-test-secret-key")
+        ac.set_openai_api_key(OPENAI_KEY)
+        ac.enable_dynamic_mode(model="gpt-4o-mini")
+        ch = ac.create()
+        assert ch.prompt, "Should have a prompt"
+        assert ch.token, "Should have a token"
+        # Dynamic challenges should be type "dynamic"
+        assert ch.challenge_type == "dynamic", f"Expected dynamic, got {ch.challenge_type}"
+        print(f"    Generated: {ch.prompt[:70]}...")
+
+    @test("LIVE: Dynamic challenge solve + verify flow (5 rounds)")
+    def _():
+        from agentchallenge.dynamic import _call_llm, PROVIDERS
+        ac = AgentChallenge(secret="live-test-secret-key")
+        ac.set_openai_api_key(OPENAI_KEY)
+        ac.enable_dynamic_mode(model="gpt-4o-mini")
+
+        solved = 0
+        for i in range(5):
+            ch = ac.create()
+            if ch.challenge_type != "dynamic":
+                print(f"    Round {i+1}: fell back to static ({ch.challenge_type})")
+                continue
+
+            # Solve using LLM
+            answer = _call_llm(
+                "openai", OPENAI_KEY,
+                [{"role": "user", "content": f"Solve this challenge. Reply with ONLY the answer, nothing else.\n\n{ch.prompt}"}],
+                model="gpt-4o-mini",
+            )
+            result = ac.verify(token=ch.token, answer=answer)
+            if result.valid:
+                solved += 1
+                print(f"    Round {i+1}: ✅ {ch.prompt[:50]}... → {answer}")
+            else:
+                print(f"    Round {i+1}: ❌ {ch.prompt[:50]}... → {answer} ({result.error})")
+
+        assert solved >= 3, f"Only solved {solved}/5 dynamic challenges"
+        print(f"    Solved {solved}/5 dynamic challenges")
+else:
+    print(f"\n⏭️  Skipping live dynamic tests (OPENAI_API_KEY not set)")
+
+
 # ── Summary ───────────────────────────────────────────
 print(f"\n{'='*50}")
 print(f"  ✅ Passed: {passed}")

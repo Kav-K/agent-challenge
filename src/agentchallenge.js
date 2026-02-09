@@ -2,10 +2,14 @@
  * agent-challenge v0.2.0 (JavaScript/Node.js port)
  *
  * LLM-solvable challenge-response authentication for AI agent APIs.
- * 12 challenge types with fully randomized inputs — no fixed word lists.
+ * 12 static challenge types with fully randomized inputs.
+ * Optional dynamic mode: LLM-generated challenges with self-verification.
+ *
+ * ⚠️ Dynamic mode adds 2 LLM API requests per challenge generation.
  */
 
 import crypto from 'crypto';
+import { request as httpsRequest } from 'https';
 
 // ── Helpers ──────────────────────────────────────────
 
@@ -237,32 +241,243 @@ function normalizeAnswer(answer) {
 }
 
 
+// ── Dynamic Mode — LLM Providers ─────────────────────
+
+const PROVIDERS = {
+  openai: {
+    host: 'api.openai.com', path: '/v1/chat/completions',
+    envKey: 'OPENAI_API_KEY', defaultModel: 'gpt-4o-mini',
+    headers: (key) => ({ Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }),
+    body: (model, messages) => JSON.stringify({ model, messages, temperature: 1.0, max_tokens: 300 }),
+    extract: (resp) => resp.choices[0].message.content.trim(),
+  },
+  anthropic: {
+    host: 'api.anthropic.com', path: '/v1/messages',
+    envKey: 'ANTHROPIC_API_KEY', defaultModel: 'claude-sonnet-4-20250514',
+    headers: (key) => ({ 'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }),
+    body: (model, messages) => JSON.stringify({ model, max_tokens: 300, messages }),
+    extract: (resp) => resp.content[0].text.trim(),
+  },
+  google: {
+    envKey: 'GOOGLE_API_KEY', defaultModel: 'gemini-2.0-flash',
+    buildPath: (model, key) => `/v1beta/models/${model}:generateContent?key=${key}`,
+    host: 'generativelanguage.googleapis.com',
+    headers: () => ({ 'Content-Type': 'application/json' }),
+    body: (model, messages) => JSON.stringify({
+      contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : m.role, parts: [{ text: m.content }] })),
+      generationConfig: { temperature: 1.0, maxOutputTokens: 300 },
+    }),
+    extract: (resp) => resp.candidates[0].content.parts[0].text.trim(),
+  },
+};
+
+const GENERATE_PROMPT = `Generate a unique reasoning challenge for an AI agent to solve.
+
+Requirements:
+- The challenge must be solvable by reasoning/logic alone (no web search, no tools, no code execution)
+- There must be exactly ONE correct answer with no ambiguity
+- The answer should be short (a word, number, or short phrase)
+- Be creative — use wordplay, logic puzzles, ciphers, pattern recognition, math, etc.
+- Vary the difficulty: some easy, some tricky
+- DO NOT reuse common examples — generate something novel each time
+
+Output format (strict JSON, no markdown):
+{"prompt": "the challenge text for the agent", "answer": "the correct answer"}
+
+Example outputs (do NOT reuse these):
+{"prompt": "If you remove the first and last letter of STRANGE, what word remains?", "answer": "trang"}
+{"prompt": "What is the 7th prime number?", "answer": "17"}
+{"prompt": "Replace each vowel in ROBOT with the next vowel (A→E, E→I, I→O, O→U, U→A). What do you get?", "answer": "RUBUT"}
+
+Generate one challenge now:`;
+
+function _callLLM(providerName, apiKey, messages, model, timeout = 15000) {
+  const provider = PROVIDERS[providerName];
+  model = model || provider.defaultModel;
+
+  return new Promise((resolve, reject) => {
+    const path = provider.buildPath ? provider.buildPath(model, apiKey) : provider.path;
+    const hdrs = provider.headers(apiKey);
+    const body = provider.body(model, messages);
+
+    const req = httpsRequest({ hostname: provider.host, path, method: 'POST', headers: { ...hdrs, 'Content-Length': Buffer.byteLength(body) }, timeout }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        if (res.statusCode !== 200) return reject(new Error(`LLM API error (${res.statusCode}): ${data.substring(0, 200)}`));
+        try { resolve(provider.extract(JSON.parse(data))); } catch (e) { reject(new Error(`LLM response parse error: ${e.message}`)); }
+      });
+    });
+    req.on('error', e => reject(new Error(`LLM connection error: ${e.message}`)));
+    req.on('timeout', () => { req.destroy(); reject(new Error('LLM API timeout')); });
+    req.write(body);
+    req.end();
+  });
+}
+
+function _normalizeForCompare(answer) {
+  let s = answer.trim().toLowerCase();
+  if (s.length >= 2 && s[0] === s[s.length - 1] && (s[0] === '"' || s[0] === "'")) s = s.slice(1, -1).trim();
+  s = s.replace(/\.$/, '');
+  return s.replace(/\s+/g, ' ');
+}
+
+async function generateDynamicChallenge(providerName, apiKey, model, verifyModel, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      let raw = await _callLLM(providerName, apiKey, [{ role: 'user', content: GENERATE_PROMPT }], model);
+      raw = raw.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+
+      const data = JSON.parse(raw);
+      const prompt = (data.prompt || '').trim();
+      const expectedAnswer = (data.answer || '').trim();
+      if (!prompt || !expectedAnswer) continue;
+
+      // Verify by solving
+      const verifyResp = await _callLLM(providerName, apiKey,
+        [{ role: 'user', content: `Solve this challenge. Think step by step, then give ONLY the final answer on the last line.\n\nChallenge: ${prompt}\n\nYour final answer (just the answer, nothing else):` }],
+        verifyModel || model
+      );
+      const verifyAnswer = verifyResp.trim().split('\n').pop().trim();
+
+      if (_normalizeForCompare(expectedAnswer) === _normalizeForCompare(verifyAnswer)) {
+        return { prompt, answer: expectedAnswer.toLowerCase() };
+      }
+    } catch (e) {
+      // continue to next retry
+    }
+  }
+  return null; // fallback to static
+}
+
+
 // ── Main Class ───────────────────────────────────────
 
 export class AgentChallenge {
+  /**
+   * LLM-solvable challenge-response system.
+   *
+   * @param {Object} opts
+   * @param {string} opts.secret - Server secret key for signing tokens (min 8 chars)
+   * @param {string} [opts.difficulty='easy'] - "easy", "medium", or "hard"
+   * @param {number} [opts.ttl=300] - Challenge TTL in seconds
+   * @param {string[]} [opts.types] - Optional list of allowed challenge types
+   */
   constructor({ secret, difficulty = 'easy', ttl = 300, types = null } = {}) {
     if (!secret || secret.length < 8) throw new Error('Secret must be at least 8 characters');
     this._secret = secret;
     this._difficulty = difficulty;
     this._ttl = ttl;
     this._types = types;
+
+    // Dynamic mode state
+    this._dynamicEnabled = false;
+    this._dynamicProvider = null;
+    this._dynamicModel = null;
+    this._dynamicVerifyModel = null;
+    this._apiKeys = {};
+
+    // Auto-detect from env
+    for (const [name, config] of Object.entries(PROVIDERS)) {
+      const envVal = process.env[config.envKey];
+      if (envVal) this._apiKeys[name] = envVal;
+    }
   }
 
-  create(challengeType = null) {
-    let typeName;
-    if (challengeType) {
-      if (!CHALLENGE_TYPES[challengeType]) throw new Error(`Unknown type: ${challengeType}`);
-      typeName = challengeType;
+  // ── API Key Management ────────────────────────────
+
+  /** Set OpenAI API key for dynamic challenge generation. */
+  setOpenaiApiKey(key) { this._apiKeys.openai = key; return this; }
+
+  /** Set Anthropic API key for dynamic challenge generation. */
+  setAnthropicApiKey(key) { this._apiKeys.anthropic = key; return this; }
+
+  /** Set Google Gemini API key for dynamic challenge generation. */
+  setGoogleApiKey(key) { this._apiKeys.google = key; return this; }
+
+  // ── Dynamic Mode ──────────────────────────────────
+
+  /**
+   * Enable dynamic LLM-generated challenges.
+   *
+   * ⚠️ This adds 2 LLM API requests per challenge generation
+   * (one to generate, one to verify). This adds latency (~2-5s)
+   * and cost to your challenge endpoint.
+   *
+   * @param {Object} [opts]
+   * @param {string} [opts.provider] - "openai", "anthropic", or "google". Auto-detected if omitted.
+   * @param {string} [opts.model] - LLM model for generation.
+   * @param {string} [opts.verifyModel] - LLM model for verification.
+   * @returns {AgentChallenge} self (for chaining)
+   */
+  enableDynamicMode({ provider, model, verifyModel } = {}) {
+    if (provider) {
+      if (!PROVIDERS[provider]) throw new Error(`Unknown provider: ${provider}. Choose from: ${Object.keys(PROVIDERS).join(', ')}`);
+      if (!this._apiKeys[provider]) throw new Error(`No API key set for ${provider}. Use set${provider[0].toUpperCase() + provider.slice(1)}ApiKey() or set ${PROVIDERS[provider].envKey} env var.`);
+      this._dynamicProvider = provider;
     } else {
-      const pool = this._types || DIFFICULTY_MAP[this._difficulty] || DIFFICULTY_MAP.easy;
-      typeName = pick(pool);
+      for (const p of ['openai', 'anthropic', 'google']) {
+        if (this._apiKeys[p]) { this._dynamicProvider = p; break; }
+      }
+      if (!this._dynamicProvider) throw new Error('No API key available. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY.');
     }
+    this._dynamicEnabled = true;
+    this._dynamicModel = model || null;
+    this._dynamicVerifyModel = verifyModel || null;
+    return this;
+  }
+
+  /** Disable dynamic mode and return to static challenges only. */
+  disableDynamicMode() { this._dynamicEnabled = false; return this; }
+
+  /** Whether dynamic challenge generation is currently enabled. */
+  get dynamicMode() { return this._dynamicEnabled; }
+
+  // ── Challenge Operations ──────────────────────────
+
+  /**
+   * Create a new challenge. If dynamic mode is enabled, attempts LLM generation
+   * first and falls back to static on failure.
+   */
+  async create(challengeType = null) {
+    // Dynamic mode: try LLM-generated challenge
+    if (this._dynamicEnabled && !challengeType) {
+      const result = await generateDynamicChallenge(
+        this._dynamicProvider, this._apiKeys[this._dynamicProvider],
+        this._dynamicModel, this._dynamicVerifyModel
+      );
+      if (result) return this._buildChallenge('dynamic', result.prompt, result.answer);
+    }
+
+    // Static mode (or dynamic fallback)
+    const pool = this._types || DIFFICULTY_MAP[this._difficulty] || DIFFICULTY_MAP.easy;
+    const typeName = challengeType || pick(pool);
+    if (!CHALLENGE_TYPES[typeName]) throw new Error(`Unknown type: ${typeName}`);
     const { prompt, answer } = CHALLENGE_TYPES[typeName]();
+    return this._buildChallenge(typeName, prompt, answer);
+  }
+
+  /**
+   * Create a challenge synchronously (static only, no dynamic mode).
+   * Use this when you need a sync API and don't need dynamic challenges.
+   */
+  createSync(challengeType = null) {
+    const pool = this._types || DIFFICULTY_MAP[this._difficulty] || DIFFICULTY_MAP.easy;
+    const typeName = challengeType || pick(pool);
+    if (!CHALLENGE_TYPES[typeName]) throw new Error(`Unknown type: ${typeName}`);
+    const { prompt, answer } = CHALLENGE_TYPES[typeName]();
+    return this._buildChallenge(typeName, prompt, answer);
+  }
+
+  _buildChallenge(typeName, prompt, answer) {
     const id = 'ch_' + crypto.randomBytes(12).toString('hex');
     const now = Math.floor(Date.now() / 1000);
     const payload = { id, type: typeName, answer_hash: hashAnswer(answer), created_at: now, expires_at: now + this._ttl };
     const token = encodeToken(payload, this._secret);
-    return { id, prompt, token, expires_at: now + this._ttl, challenge_type: typeName, toDict() { return { id, prompt, token, expires_in: Math.max(0, payload.expires_at - Math.floor(Date.now() / 1000)), type: 'reasoning' }; } };
+    return {
+      id, prompt, token, expires_at: now + this._ttl, challenge_type: typeName,
+      toDict() { return { id, prompt, token, expires_in: Math.max(0, payload.expires_at - Math.floor(Date.now() / 1000)), type: 'reasoning' }; }
+    };
   }
 
   verify(token, answer) {
@@ -277,4 +492,4 @@ export class AgentChallenge {
   }
 }
 
-export { CHALLENGE_TYPES, DIFFICULTY_MAP };
+export { CHALLENGE_TYPES, DIFFICULTY_MAP, _callLLM };

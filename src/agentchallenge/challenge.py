@@ -7,10 +7,15 @@ import base64
 import time
 import secrets
 import re
+import os
+import logging
 from dataclasses import dataclass, field
 from typing import Optional
 
 from .types import CHALLENGE_TYPES, generate_challenge
+from .dynamic import generate_dynamic_challenge, PROVIDERS
+
+logger = logging.getLogger("agentchallenge")
 
 
 @dataclass
@@ -56,8 +61,28 @@ class AgentChallenge:
     The system is fully stateless — challenge data is signed into tokens
     using HMAC, so no database is required.
 
+    ## Static Mode (default)
+    Uses 12 built-in challenge types with fully randomized inputs.
+    No external API calls needed. Fast, deterministic, free.
+
+    ## Dynamic Mode
+    Uses an LLM to generate novel, creative challenges. Each challenge
+    is verified by a second LLM call to ensure it has exactly one correct answer.
+
+    ⚠️ Dynamic mode adds 2 LLM API requests per challenge generation
+    (one to generate, one to verify). This adds latency and cost to your
+    challenge endpoint.
+
+    To enable dynamic mode, set an API key and call enable_dynamic_mode():
+
+        ac = AgentChallenge(secret="your-secret")
+        ac.set_openai_api_key("sk-...")  # or set OPENAI_API_KEY env var
+        ac.enable_dynamic_mode()
+
+    Supported providers: OpenAI, Anthropic, Google Gemini.
+
     Args:
-        secret: Server secret key for signing tokens (min 16 chars recommended).
+        secret: Server secret key for signing tokens (min 8 chars).
         difficulty: "easy", "medium", or "hard". Controls which challenge types are used.
         ttl: Challenge time-to-live in seconds (default 300 = 5 minutes).
         types: Optional list of challenge type names to use. If None, uses difficulty-based selection.
@@ -77,24 +102,145 @@ class AgentChallenge:
         self._ttl = ttl
         self._allowed_types = types
 
+        # Dynamic mode state
+        self._dynamic_enabled = False
+        self._dynamic_provider = None
+        self._dynamic_model = None
+        self._dynamic_verify_model = None
+        self._api_keys = {}  # provider_name -> key
+
+        # Auto-detect API keys from environment
+        for provider_name, config in PROVIDERS.items():
+            env_key = os.environ.get(config["env_key"])
+            if env_key:
+                self._api_keys[provider_name] = env_key
+
+    # ── API Key Management ────────────────────────────
+
+    def set_openai_api_key(self, key: str) -> "AgentChallenge":
+        """Set OpenAI API key for dynamic challenge generation."""
+        self._api_keys["openai"] = key
+        return self
+
+    def set_anthropic_api_key(self, key: str) -> "AgentChallenge":
+        """Set Anthropic API key for dynamic challenge generation."""
+        self._api_keys["anthropic"] = key
+        return self
+
+    def set_google_api_key(self, key: str) -> "AgentChallenge":
+        """Set Google Gemini API key for dynamic challenge generation."""
+        self._api_keys["google"] = key
+        return self
+
+    # ── Dynamic Mode ──────────────────────────────────
+
+    def enable_dynamic_mode(
+        self,
+        provider: Optional[str] = None,
+        model: Optional[str] = None,
+        verify_model: Optional[str] = None,
+    ) -> "AgentChallenge":
+        """
+        Enable dynamic LLM-generated challenges.
+
+        ⚠️ This adds 2 LLM API requests per challenge generation
+        (one to generate, one to verify). This adds latency (~2-5s)
+        and cost to your challenge endpoint.
+
+        Falls back to static challenges if the LLM call fails.
+
+        Args:
+            provider: "openai", "anthropic", or "google". Auto-detected from available keys if None.
+            model: LLM model to use for generation. Uses provider default if None.
+            verify_model: LLM model for verification. Uses same as generation if None.
+
+        Returns:
+            self (for chaining)
+
+        Raises:
+            ValueError: If no API key is available for the selected provider.
+        """
+        # Resolve provider
+        if provider:
+            if provider not in PROVIDERS:
+                raise ValueError(f"Unknown provider: {provider}. Choose from: {list(PROVIDERS.keys())}")
+            if provider not in self._api_keys:
+                raise ValueError(
+                    f"No API key set for {provider}. "
+                    f"Use set_{provider}_api_key() or set {PROVIDERS[provider]['env_key']} env var."
+                )
+            self._dynamic_provider = provider
+        else:
+            # Auto-detect: prefer openai > anthropic > google
+            for p in ["openai", "anthropic", "google"]:
+                if p in self._api_keys:
+                    self._dynamic_provider = p
+                    break
+            if not self._dynamic_provider:
+                raise ValueError(
+                    "No API key available. Set one of: OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY "
+                    "or use set_openai_api_key() / set_anthropic_api_key() / set_google_api_key()"
+                )
+
+        self._dynamic_enabled = True
+        self._dynamic_model = model
+        self._dynamic_verify_model = verify_model
+
+        logger.info(
+            f"Dynamic mode enabled: provider={self._dynamic_provider}, "
+            f"model={model or PROVIDERS[self._dynamic_provider]['default_model']}"
+        )
+        return self
+
+    def disable_dynamic_mode(self) -> "AgentChallenge":
+        """Disable dynamic mode and return to static challenges only."""
+        self._dynamic_enabled = False
+        logger.info("Dynamic mode disabled")
+        return self
+
+    @property
+    def dynamic_mode(self) -> bool:
+        """Whether dynamic challenge generation is currently enabled."""
+        return self._dynamic_enabled
+
+    # ── Challenge Creation ────────────────────────────
+
     def create(self, challenge_type: Optional[str] = None) -> Challenge:
         """
         Create a new challenge.
 
+        If dynamic mode is enabled and no specific type is requested,
+        attempts to generate a challenge via LLM. Falls back to static
+        challenges if the LLM call fails.
+
         Args:
-            challenge_type: Optional specific challenge type. If None, randomly selected.
+            challenge_type: Optional specific static challenge type. If set, bypasses dynamic mode.
 
         Returns:
             Challenge object with prompt, token, and metadata.
         """
-        # Generate the challenge
+        # Dynamic mode: try LLM-generated challenge
+        if self._dynamic_enabled and not challenge_type:
+            result = generate_dynamic_challenge(
+                provider_name=self._dynamic_provider,
+                api_key=self._api_keys[self._dynamic_provider],
+                model=self._dynamic_model,
+                verify_model=self._dynamic_verify_model,
+            )
+            if result:
+                prompt, answer = result
+                return self._build_challenge("dynamic", prompt, answer)
+
+        # Static mode (or dynamic fallback)
         ctype, prompt, answer = generate_challenge(
             difficulty=self._difficulty,
             specific_type=challenge_type,
             allowed_types=self._allowed_types,
         )
+        return self._build_challenge(ctype, prompt, answer)
 
-        # Create token payload
+    def _build_challenge(self, ctype: str, prompt: str, answer: str) -> Challenge:
+        """Build a Challenge object from type, prompt, and answer."""
         challenge_id = "ch_" + secrets.token_hex(12)
         now = time.time()
         payload = {
@@ -104,8 +250,6 @@ class AgentChallenge:
             "created_at": int(now),
             "expires_at": int(now + self._ttl),
         }
-
-        # Sign it
         token = _encode_token(payload, self._secret)
 
         return Challenge(
