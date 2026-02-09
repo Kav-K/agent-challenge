@@ -566,6 +566,31 @@ def _():
     assert r.status == "challenge_required"
     assert r.prompt is not None
 
+@test("gate: challenge includes instructions field")
+def _():
+    ac = AgentChallenge(secret="persist-test-12345")
+    r = ac.gate()
+    assert r.instructions is not None
+    assert "challenge_token" in r.instructions
+    assert "answer" in r.instructions
+    assert "Authorization" in r.instructions
+    d = r.to_dict()
+    assert "instructions" in d
+
+@test("persistent=False: instructions mention no persistent token")
+def _():
+    ac = AgentChallenge(secret="persist-test-12345", persistent=False)
+    r = ac.gate()
+    assert "every request" in r.instructions
+    assert "No persistent" in r.instructions
+
+@test("persistent=True: instructions mention saving token")
+def _():
+    ac = AgentChallenge(secret="persist-test-12345", persistent=True)
+    r = ac.gate()
+    assert "persistent token" in r.instructions
+    assert "Authorization" in r.instructions
+
 @test("persistent=True (default): gate solve returns token")
 def _():
     ac = AgentChallenge(secret="persist-test-12345", difficulty="easy")
