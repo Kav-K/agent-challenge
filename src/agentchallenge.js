@@ -672,6 +672,95 @@ export class AgentChallenge {
     if (hashAnswer(normalized) === payload.answer_hash) return { valid: true, challenge_type: payload.type, elapsed_ms: Date.now() - start };
     return { valid: false, error: 'Incorrect answer', challenge_type: payload.type };
   }
+
+  // ── Gate (unified challenge/auth endpoint) ─────────
+
+  /**
+   * Unified challenge gate. Call from a single endpoint.
+   *
+   * Three modes:
+   *   1. token → verify persistent token → { status: "authenticated" }
+   *   2. challengeToken + answer → verify → issue persistent token
+   *   3. Nothing → issue a new challenge
+   *
+   * @param {Object} opts
+   * @param {string} [opts.token] - Persistent agent token
+   * @param {string} [opts.challengeToken] - Challenge token from previous gate()
+   * @param {string} [opts.answer] - Agent's answer
+   * @returns {{ status: string, prompt?: string, challenge_token?: string, expires_in?: number, token?: string, error?: string }}
+   */
+  gateSync({ token, challengeToken, answer } = {}) {
+    // Mode 1: Persistent token
+    if (token) {
+      if (this.verifyToken(token)) return { status: 'authenticated' };
+      return { status: 'error', error: 'Invalid or expired token' };
+    }
+
+    // Mode 2: Submitting answer
+    if (challengeToken && answer) {
+      const result = this.verify(challengeToken, answer);
+      if (result.valid) {
+        const newToken = this.createToken();
+        return { status: 'authenticated', token: newToken };
+      }
+      return { status: 'error', error: result.error || 'Incorrect answer' };
+    }
+
+    // Mode 3: Issue challenge
+    const challenge = this.createSync();
+    return {
+      status: 'challenge_required',
+      prompt: challenge.prompt,
+      challenge_token: challenge.token,
+      expires_in: Math.max(0, challenge.expires_at - Math.floor(Date.now() / 1000)),
+    };
+  }
+
+  /**
+   * Async version of gate (supports dynamic mode).
+   */
+  async gate({ token, challengeToken, answer } = {}) {
+    if (token) {
+      if (this.verifyToken(token)) return { status: 'authenticated' };
+      return { status: 'error', error: 'Invalid or expired token' };
+    }
+    if (challengeToken && answer) {
+      const result = this.verify(challengeToken, answer);
+      if (result.valid) return { status: 'authenticated', token: this.createToken() };
+      return { status: 'error', error: result.error || 'Incorrect answer' };
+    }
+    const challenge = await this.create();
+    return {
+      status: 'challenge_required',
+      prompt: challenge.prompt,
+      challenge_token: challenge.token,
+      expires_in: Math.max(0, challenge.expires_at - Math.floor(Date.now() / 1000)),
+    };
+  }
+
+  // ── Persistent Tokens ─────────────────────────────
+
+  /**
+   * Create a persistent agent token (long-lived, HMAC-signed).
+   * Issued after an agent solves a challenge. Stateless.
+   */
+  createToken(agentId) {
+    const id = 'at_' + crypto.randomBytes(16).toString('hex');
+    const payload = { id, type: 'agent_token', created_at: Math.floor(Date.now() / 1000) };
+    if (agentId) payload.agent_id = agentId;
+    return encodeToken(payload, this._secret);
+  }
+
+  /**
+   * Verify a persistent agent token.
+   * @returns {boolean}
+   */
+  verifyToken(token) {
+    try {
+      const payload = decodeToken(token, this._secret);
+      return payload.type === 'agent_token';
+    } catch { return false; }
+  }
 }
 
 export { CHALLENGE_TYPES, DIFFICULTY_MAP, _callLLM };

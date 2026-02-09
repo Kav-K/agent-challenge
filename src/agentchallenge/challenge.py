@@ -51,6 +51,35 @@ class VerifyResult:
     elapsed_ms: Optional[int] = None
 
 
+@dataclass
+class GateResult:
+    """Result of the gate() call — the unified challenge/auth endpoint."""
+    status: str  # "challenge_required", "authenticated", "error"
+    # Challenge fields (when status == "challenge_required")
+    prompt: Optional[str] = None
+    challenge_token: Optional[str] = None
+    expires_in: Optional[int] = None
+    # Auth fields (when status == "authenticated" and newly issued)
+    token: Optional[str] = None
+    # Error fields
+    error: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        """Serialize for JSON API responses."""
+        d = {"status": self.status}
+        if self.prompt is not None:
+            d["prompt"] = self.prompt
+        if self.challenge_token is not None:
+            d["challenge_token"] = self.challenge_token
+        if self.expires_in is not None:
+            d["expires_in"] = self.expires_in
+        if self.token is not None:
+            d["token"] = self.token
+        if self.error is not None:
+            d["error"] = self.error
+        return d
+
+
 class AgentChallenge:
     """
     LLM-solvable challenge-response system.
@@ -259,6 +288,96 @@ class AgentChallenge:
             expires_at=now + self._ttl,
             challenge_type=ctype,
         )
+
+    # ── Gate (unified challenge/auth endpoint) ─────────
+
+    def gate(
+        self,
+        token: Optional[str] = None,
+        challenge_token: Optional[str] = None,
+        answer: Optional[str] = None,
+    ) -> GateResult:
+        """
+        Unified challenge gate. Call this from a single endpoint.
+
+        Three modes:
+        1. token provided → verify persistent token → authenticated
+        2. challenge_token + answer → verify answer → issue persistent token
+        3. Nothing → issue a new challenge
+
+        Args:
+            token: Persistent agent token (from previous gate() success).
+            challenge_token: Challenge token (from a previous gate() challenge).
+            answer: Agent's answer to the challenge.
+
+        Returns:
+            GateResult with status and relevant fields.
+        """
+        # Mode 1: Agent has a persistent token — verify it
+        if token:
+            if self.verify_token(token):
+                return GateResult(status="authenticated")
+            return GateResult(status="error", error="Invalid or expired token")
+
+        # Mode 2: Agent is submitting an answer to a challenge
+        if challenge_token and answer:
+            result = self.verify(challenge_token, answer)
+            if result.valid:
+                new_token = self.create_token()
+                return GateResult(status="authenticated", token=new_token)
+            return GateResult(status="error", error=result.error or "Incorrect answer")
+
+        # Mode 3: No token, no answer — issue a new challenge
+        challenge = self.create()
+        return GateResult(
+            status="challenge_required",
+            prompt=challenge.prompt,
+            challenge_token=challenge.token,
+            expires_in=max(0, int(challenge.expires_at - time.time())),
+        )
+
+    # ── Persistent Tokens ─────────────────────────────
+
+    def create_token(self, agent_id: Optional[str] = None) -> str:
+        """
+        Create a persistent agent token (long-lived, HMAC-signed).
+
+        This is issued after an agent successfully solves a challenge.
+        The agent saves this and passes it in future gate() calls.
+
+        Args:
+            agent_id: Optional identifier for the agent.
+
+        Returns:
+            Signed token string.
+        """
+        token_id = "at_" + secrets.token_hex(16)
+        payload = {
+            "id": token_id,
+            "type": "agent_token",
+            "created_at": int(time.time()),
+        }
+        if agent_id:
+            payload["agent_id"] = agent_id
+        return _encode_token(payload, self._secret)
+
+    def verify_token(self, token: str) -> bool:
+        """
+        Verify a persistent agent token.
+
+        Args:
+            token: The token string to verify.
+
+        Returns:
+            True if valid, False otherwise.
+        """
+        try:
+            payload = _decode_token(token, self._secret)
+            return payload.get("type") == "agent_token"
+        except TokenError:
+            return False
+
+    # ── Challenge Verification ────────────────────────
 
     def verify(self, token: str, answer: str) -> VerifyResult:
         """

@@ -439,6 +439,108 @@ def _():
             if v is not None:
                 os.environ[k] = v
 
+# ── Gate Tests ─────────────────────────────────────────
+print("\n── Gate (unified endpoint) ──────────────────────")
+
+from agentchallenge.challenge import GateResult
+
+@test("Gate: no args returns challenge_required")
+def _():
+    ac = AgentChallenge(secret="gate-test-secret-123")
+    result = ac.gate()
+    assert isinstance(result, GateResult)
+    assert result.status == "challenge_required"
+    assert result.prompt is not None
+    assert len(result.prompt) > 5
+    assert result.challenge_token is not None
+    assert result.expires_in > 0
+    assert result.token is None  # No token yet
+
+@test("Gate: challenge_token + correct answer = authenticated + token")
+def _():
+    ac = AgentChallenge(secret="gate-test-secret-123", difficulty="easy")
+    # Get a challenge via gate
+    r1 = ac.gate()
+    assert r1.status == "challenge_required"
+    # Solve it by creating directly and getting the answer
+    challenge = ac.create()
+    # Use the low-level verify to find the answer — we'll use a known type
+    from agentchallenge.types import generate_challenge as _gc
+    ctype, prompt, answer = _gc(difficulty="easy")
+    c = ac._build_challenge(ctype, prompt, answer)
+    # Submit correct answer
+    r2 = ac.gate(challenge_token=c.token, answer=answer)
+    assert r2.status == "authenticated"
+    assert r2.token is not None
+    assert r2.token.startswith("eyJ")  # base64url
+
+@test("Gate: challenge_token + wrong answer = error")
+def _():
+    ac = AgentChallenge(secret="gate-test-secret-123")
+    r1 = ac.gate()
+    r2 = ac.gate(challenge_token=r1.challenge_token, answer="definitely_wrong_xyz_42")
+    assert r2.status == "error"
+    assert "Incorrect" in r2.error
+
+@test("Gate: valid persistent token = authenticated")
+def _():
+    ac = AgentChallenge(secret="gate-test-secret-123")
+    token = ac.create_token()
+    r = ac.gate(token=token)
+    assert r.status == "authenticated"
+    assert r.token is None  # Don't re-issue
+
+@test("Gate: invalid persistent token = error")
+def _():
+    ac = AgentChallenge(secret="gate-test-secret-123")
+    r = ac.gate(token="at_fakefakefake.invalidsig")
+    assert r.status == "error"
+    assert "Invalid" in r.error
+
+@test("Gate: wrong secret rejects token")
+def _():
+    ac1 = AgentChallenge(secret="gate-secret-one-123")
+    ac2 = AgentChallenge(secret="gate-secret-two-456")
+    token = ac1.create_token()
+    r = ac2.gate(token=token)
+    assert r.status == "error"
+
+@test("Gate: to_dict serialization")
+def _():
+    ac = AgentChallenge(secret="gate-test-secret-123")
+    r = ac.gate()
+    d = r.to_dict()
+    assert d["status"] == "challenge_required"
+    assert "prompt" in d
+    assert "challenge_token" in d
+    assert "expires_in" in d
+    assert "token" not in d  # Should be omitted when None
+
+@test("Gate: create_token and verify_token")
+def _():
+    ac = AgentChallenge(secret="gate-test-secret-123")
+    token = ac.create_token(agent_id="test-agent")
+    assert ac.verify_token(token) is True
+    assert ac.verify_token("garbage") is False
+    assert ac.verify_token("") is False
+
+@test("Gate: full round-trip (challenge → solve → token → reuse)")
+def _():
+    ac = AgentChallenge(secret="gate-full-test-12345")
+    from agentchallenge.types import generate_challenge as _gc
+    ctype, prompt, answer = _gc(difficulty="easy")
+    c = ac._build_challenge(ctype, prompt, answer)
+    # Solve
+    r = ac.gate(challenge_token=c.token, answer=answer)
+    assert r.status == "authenticated"
+    assert r.token is not None
+    # Reuse token
+    r2 = ac.gate(token=r.token)
+    assert r2.status == "authenticated"
+
+
+print("\n── Dynamic Mode ────────────────────────────────")
+
 @test("Dynamic mode: set_openai_api_key stores key")
 def _():
     ac = AgentChallenge(secret="test-dynamic-12345")

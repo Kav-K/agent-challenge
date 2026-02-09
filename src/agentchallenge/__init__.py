@@ -29,8 +29,8 @@ no scripts, no computational power, no external tools needed.
     (one to generate, one to verify). Falls back to static on failure.
 """
 
-from .challenge import AgentChallenge, Challenge, VerifyResult
+from .challenge import AgentChallenge, Challenge, VerifyResult, GateResult
 from .types import CHALLENGE_TYPES
 
-__version__ = "0.2.0"
-__all__ = ["AgentChallenge", "Challenge", "VerifyResult", "CHALLENGE_TYPES"]
+__version__ = "0.5.0"
+__all__ = ["AgentChallenge", "Challenge", "VerifyResult", "GateResult", "CHALLENGE_TYPES"]
