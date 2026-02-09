@@ -2,6 +2,7 @@
 
 import random
 from typing import Tuple
+from ..templates import MATH_TEMPLATES, reply_inst
 
 
 class MathChallenge:
@@ -15,32 +16,38 @@ class MathChallenge:
             a = random.randint(10, 999)
             b = random.randint(10, 999)
             answer = a + b
-            prompt = f"What is {a} + {b}? Reply with ONLY the number, nothing else."
+            template = random.choice(MATH_TEMPLATES["add"])
+            prompt = template(a, b)
 
         elif variant == "subtract":
             a = random.randint(100, 999)
             b = random.randint(10, a - 1)
             answer = a - b
-            prompt = f"What is {a} - {b}? Reply with ONLY the number, nothing else."
+            template = random.choice(MATH_TEMPLATES["subtract"])
+            prompt = template(a, b)
 
         elif variant == "multiply":
             a = random.randint(2, 30)
             b = random.randint(2, 30)
             answer = a * b
-            prompt = f"What is {a} × {b}? Reply with ONLY the number, nothing else."
+            template = random.choice(MATH_TEMPLATES["multiply"])
+            prompt = template(a, b)
 
         elif variant == "add_three":
             a = random.randint(10, 300)
             b = random.randint(10, 300)
             c = random.randint(10, 300)
             answer = a + b + c
-            prompt = f"What is {a} + {b} + {c}? Reply with ONLY the number, nothing else."
+            template = random.choice(MATH_TEMPLATES["add_three"])
+            prompt = template(a, b, c)
 
         else:  # subtract_chain
             a = random.randint(500, 999)
             b = random.randint(10, 200)
             c = random.randint(10, min(200, a - b - 1))
             answer = a - b - c
-            prompt = f"What is {a} - {b} - {c}? Reply with ONLY the number, nothing else."
+            template = random.choice(MATH_TEMPLATES["subtract_chain"])
+            prompt = template(a, b, c)
 
+        prompt += " " + reply_inst()
         return prompt, str(answer)

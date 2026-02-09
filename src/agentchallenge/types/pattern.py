@@ -2,6 +2,7 @@
 
 import random
 from typing import Tuple
+from ..templates import PATTERN_TEMPLATES, reply_inst
 
 
 class PatternChallenge:
@@ -47,7 +48,7 @@ class PatternChallenge:
                 current_step += step_inc
             answer = seq[-1] + current_step
 
-        display = seq
-        seq_str = ", ".join(str(n) for n in display)
-        prompt = f"What comes next in this sequence: {seq_str}, ? Reply with ONLY the number, nothing else."
+        seq_str = ", ".join(str(n) for n in seq)
+        template = random.choice(PATTERN_TEMPLATES)
+        prompt = template(seq_str) + " " + reply_inst()
         return prompt, str(answer)

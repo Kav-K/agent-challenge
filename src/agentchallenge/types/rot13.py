@@ -1,8 +1,8 @@
 """ROT13 decode challenge — decode a ROT13-encoded random string."""
 
 import random
-import string
 from typing import Tuple
+from ..templates import ROT13_TEMPLATES, reply_inst
 
 CONSONANTS = "BCDFGHJKLMNPQRSTVWXYZ"
 VOWELS = "AEIOU"
@@ -21,7 +21,6 @@ def _rot13(text: str) -> str:
 
 
 def _random_pronounceable(length: int) -> str:
-    """Generate a random pronounceable-ish uppercase string."""
     result = []
     for i in range(length):
         if i % 2 == 0:
@@ -35,11 +34,8 @@ class Rot13Challenge:
     @staticmethod
     def generate() -> Tuple[str, str]:
         length = random.randint(4, 7)
-        # Generate a random word and encode it
         word = _random_pronounceable(length)
         encoded = _rot13(word)
-        prompt = (
-            f"Decode this ROT13-encoded string (each letter shifts 13 places back in the alphabet): {encoded}\n"
-            f"Reply with ONLY the decoded word, nothing else."
-        )
+        template = random.choice(ROT13_TEMPLATES)
+        prompt = template(encoded) + " " + reply_inst()
         return prompt, word.lower()

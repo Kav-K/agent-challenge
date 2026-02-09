@@ -42,7 +42,21 @@ const NUM_WORDS = {
   19:'nineteen',20:'twenty'
 };
 
-// ── Challenge Types ──────────────────────────────────
+// ── Reply instruction templates (randomized per challenge) ───
+
+const REPLY_INSTRUCTIONS = [
+  "Reply with ONLY the answer, nothing else.",
+  "Respond with just the answer.",
+  "Give me only the answer.",
+  "Your response should contain nothing but the answer.",
+  "Write only the final answer.",
+  "Output just the answer, no explanation.",
+  "Answer with a single value only.",
+  "Just the answer please, nothing more.",
+];
+function ri() { return pick(REPLY_INSTRUCTIONS); }
+
+// ── Challenge Types (with randomized prompt templates) ───
 
 const CHALLENGE_TYPES = {
   reverse_string() {
@@ -51,30 +65,63 @@ const CHALLENGE_TYPES = {
     if (variant === 'pronounceable') word = pronounceable(randInt(5, 9));
     else if (variant === 'random') word = randChars(UPPER, randInt(5, 8));
     else word = randChars(UPPER + DIGITS, randInt(5, 8));
-    return { prompt: `Reverse the following string (reply with ONLY the reversed text, nothing else): ${word}`, answer: word.split('').reverse().join('').toLowerCase() };
+    const templates = [
+      w => `Reverse the following string: ${w}.`,
+      w => `Write the characters of ${w} in reverse order.`,
+      w => `Spell ${w} backwards.`,
+      w => `If you flip the string ${w} end-to-end, what do you get?`,
+      w => `Read ${w} from right to left and write what you see.`,
+      w => `Take the word ${w} and reverse every character.`,
+      w => `Starting from the last character to the first, rewrite ${w}.`,
+      w => `What is the result of reversing all characters in ${w}?`,
+    ];
+    return { prompt: pick(templates)(word) + ' ' + ri(), answer: word.split('').reverse().join('').toLowerCase() };
   },
 
   simple_math() {
     const op = pick(['+', '+', '-', '×', '++', '--']);
     let prompt, answer;
-    if (op === '+') { const a = randInt(10, 999), b = randInt(10, 999); answer = a + b; prompt = `What is ${a} + ${b}?`; }
-    else if (op === '-') { const a = randInt(100, 999), b = randInt(10, a - 1); answer = a - b; prompt = `What is ${a} - ${b}?`; }
-    else if (op === '×') { const a = randInt(2, 30), b = randInt(2, 30); answer = a * b; prompt = `What is ${a} × ${b}?`; }
-    else if (op === '++') { const a = randInt(10, 300), b = randInt(10, 300), c = randInt(10, 300); answer = a + b + c; prompt = `What is ${a} + ${b} + ${c}?`; }
-    else { const a = randInt(500, 999), b = randInt(10, 200), c = randInt(10, Math.min(200, a - b - 1)); answer = a - b - c; prompt = `What is ${a} - ${b} - ${c}?`; }
-    return { prompt: prompt + ' Reply with ONLY the number, nothing else.', answer: String(answer) };
+    if (op === '+') {
+      const a = randInt(10, 999), b = randInt(10, 999); answer = a + b;
+      prompt = pick([`What is ${a} + ${b}?`, `Calculate the sum of ${a} and ${b}.`, `Add ${a} to ${b}. What do you get?`, `If you combine ${a} and ${b}, what is the total?`]);
+    } else if (op === '-') {
+      const a = randInt(100, 999), b = randInt(10, a - 1); answer = a - b;
+      prompt = pick([`What is ${a} - ${b}?`, `Subtract ${b} from ${a}.`, `If you take ${b} away from ${a}, what remains?`, `Calculate ${a} minus ${b}.`]);
+    } else if (op === '×') {
+      const a = randInt(2, 30), b = randInt(2, 30); answer = a * b;
+      prompt = pick([`What is ${a} × ${b}?`, `Multiply ${a} by ${b}.`, `Calculate the product of ${a} and ${b}.`, `What do you get when you multiply ${a} times ${b}?`]);
+    } else if (op === '++') {
+      const a = randInt(10, 300), b = randInt(10, 300), c = randInt(10, 300); answer = a + b + c;
+      prompt = pick([`What is ${a} + ${b} + ${c}?`, `Add together ${a}, ${b}, and ${c}.`, `Find the sum of these three numbers: ${a}, ${b}, ${c}.`]);
+    } else {
+      const a = randInt(500, 999), b = randInt(10, 200), c = randInt(10, Math.min(200, a - b - 1)); answer = a - b - c;
+      prompt = pick([`What is ${a} - ${b} - ${c}?`, `Start with ${a}, subtract ${b}, then subtract ${c}.`, `Take ${a}, remove ${b}, then remove another ${c}. What's left?`]);
+    }
+    return { prompt: prompt + ' ' + ri(), answer: String(answer) };
   },
 
   letter_position() {
     const word = randChars(UPPER, randInt(3, 4));
     const total = [...word].reduce((s, c) => s + (c.charCodeAt(0) - 64), 0);
-    return { prompt: `If A=1, B=2, C=3, ... Z=26, what is the sum of the letter values in "${word}"? Reply with ONLY the number, nothing else.`, answer: String(total) };
+    const templates = [
+      w => `If A=1, B=2, C=3, ... Z=26, what is the sum of the letter values in "${w}"?`,
+      w => `Assign each letter a number (A=1, B=2, through Z=26). Add up the values of all letters in "${w}".`,
+      w => `Using the mapping A→1, B→2, C→3, ..., Z→26, calculate the total value of the letters in "${w}".`,
+      w => `Each letter has a position in the alphabet (A=1, Z=26). What is the sum of positions for the letters in "${w}"?`,
+    ];
+    return { prompt: pick(templates)(word) + ' ' + ri(), answer: String(total) };
   },
 
   rot13() {
     const word = pronounceable(randInt(4, 7));
     const encoded = rot13(word);
-    return { prompt: `Decode this ROT13-encoded string (each letter shifts 13 places back in the alphabet): ${encoded}\nReply with ONLY the decoded word, nothing else.`, answer: word.toLowerCase() };
+    const templates = [
+      e => `Decode this ROT13-encoded string (each letter shifts 13 places back in the alphabet): ${e}`,
+      e => `Apply ROT13 decoding to the text: ${e}`,
+      e => `The following text was encoded with ROT13. Decode it: ${e}`,
+      e => `Shift each letter in ${e} by 13 positions in the alphabet to decode it.`,
+    ];
+    return { prompt: pick(templates)(encoded) + ' ' + ri(), answer: word.toLowerCase() };
   },
 
   pattern() {
@@ -99,7 +146,15 @@ const CHALLENGE_TYPES = {
       display = [start]; for (let i = 0; i < 4; i++) display.push(display[display.length-1] + is_ + i);
       answer = display[4] + is_ + 4;
     }
-    return { prompt: `What comes next in this sequence: ${display.join(', ')}, ? Reply with ONLY the number, nothing else.`, answer: String(answer) };
+    const seq = display.join(', ');
+    const templates = [
+      s => `What comes next in this sequence: ${s}, ?`,
+      s => `Find the next number: ${s}, ?`,
+      s => `Continue this pattern: ${s}, ?`,
+      s => `What number follows this sequence: ${s}, ?`,
+      s => `Identify the next value in the series: ${s}, ?`,
+    ];
+    return { prompt: pick(templates)(seq) + ' ' + ri(), answer: String(answer) };
   },
 
   extract_letters() {
@@ -110,24 +165,53 @@ const CHALLENGE_TYPES = {
       mixed += word[i];
       if (i < word.length - 1) for (let j = 0; j < n - 1; j++) mixed += CONSONANTS[randInt(0, CONSONANTS.length - 1)];
     }
-    const ordinal = n === 2 ? '2nd' : '3rd';
-    return { prompt: `Extract every ${ordinal} letter from this string, starting from the 1st character: ${mixed}\nReply with ONLY the extracted letters as one word, nothing else.`, answer: word.toLowerCase() };
+    const templates2 = [
+      m => `Extract every 2nd letter from this string, starting from the 1st character: ${m}`,
+      m => `Take every other character from ${m}, beginning with the first.`,
+      m => `From the string ${m}, pick characters at positions 1, 3, 5, 7... What do you get?`,
+    ];
+    const templates3 = [
+      m => `Extract every 3rd letter from this string, starting from the 1st character: ${m}`,
+      m => `From ${m}, take the 1st, 4th, 7th, 10th... characters.`,
+      m => `Pick every third character from ${m}, starting at position 1.`,
+    ];
+    return { prompt: pick(n === 2 ? templates2 : templates3)(mixed) + ' ' + ri(), answer: word.toLowerCase() };
   },
 
   word_math() {
     const v = pick(['digit_to_word', 'char_count', 'vowel_count', 'digit_sum']);
     if (v === 'digit_to_word') {
       const a = randInt(1, 10), b = randInt(1, 10);
-      return { prompt: `What is ${a} + ${b}? Write the answer as a word (e.g., "twelve"), not a number. Reply with ONLY the word, nothing else.`, answer: NUM_WORDS[a + b] };
+      const t = pick([
+        (x,y) => `What is ${x} + ${y}? Write the answer as a word (e.g., "twelve"), not a number.`,
+        (x,y) => `Add ${x} and ${y}. Spell out the answer as an English word.`,
+        (x,y) => `Calculate ${x} + ${y} and write the result as a word, not a digit.`,
+      ]);
+      return { prompt: t(a, b) + ' ' + ri(), answer: NUM_WORDS[a + b] };
     } else if (v === 'char_count') {
       const w = randChars(UPPER, randInt(4, 8));
-      return { prompt: `How many letters are in the string "${w}"? Reply with ONLY the number, nothing else.`, answer: String(w.length) };
+      const t = pick([
+        x => `How many characters are in the string "${x}"?`,
+        x => `Count the total number of letters in "${x}".`,
+        x => `What is the length of the string "${x}"?`,
+      ]);
+      return { prompt: t(w) + ' ' + ri(), answer: String(w.length) };
     } else if (v === 'vowel_count') {
       const w = randChars(UPPER, randInt(5, 9));
-      return { prompt: `How many vowels (A, E, I, O, U) are in "${w}"? Reply with ONLY the number, nothing else.`, answer: String([...w].filter(c => 'AEIOU'.includes(c)).length) };
+      const t = pick([
+        x => `How many vowels (A, E, I, O, U) are in "${x}"?`,
+        x => `Count the vowels in the string "${x}".`,
+        x => `In the text "${x}", how many letters are vowels (A, E, I, O, U)?`,
+      ]);
+      return { prompt: t(w) + ' ' + ri(), answer: String([...w].filter(c => 'AEIOU'.includes(c)).length) };
     } else {
       const num = randInt(100, 9999);
-      return { prompt: `What is the sum of the digits of ${num}? Reply with ONLY the number, nothing else.`, answer: String([...String(num)].reduce((s, d) => s + Number(d), 0)) };
+      const t = pick([
+        n => `What is the sum of the digits of ${n}?`,
+        n => `Add up each individual digit in the number ${n}.`,
+        n => `Take the number ${n} and sum its digits together.`,
+      ]);
+      return { prompt: t(num) + ' ' + ri(), answer: String([...String(num)].reduce((s, d) => s + Number(d), 0)) };
     }
   },
 
@@ -135,44 +219,59 @@ const CHALLENGE_TYPES = {
     const word = pronounceable(randInt(4, 7));
     const shift = pick([3, 5, 7, 11]);
     const encoded = caesarEncode(word, shift);
-    return { prompt: `Decode this Caesar cipher (each letter is shifted ${shift} positions forward in the alphabet): ${encoded}\nShift each letter ${shift} positions BACKWARD to decode. Reply with ONLY the decoded word, nothing else.`, answer: word.toLowerCase() };
+    const templates = [
+      (e,s) => `Decode this Caesar cipher (each letter is shifted ${s} positions forward in the alphabet): ${e}\nShift each letter ${s} positions BACKWARD to decode.`,
+      (e,s) => `The text ${e} was encrypted with a Caesar shift of ${s}. Decrypt it by shifting each letter back by ${s}.`,
+      (e,s) => `Apply a reverse Caesar shift of ${s} to decode: ${e}`,
+      (e,s) => `This message was encoded by shifting each letter forward by ${s} in the alphabet: ${e}. What is the original text?`,
+    ];
+    return { prompt: pick(templates)(encoded, shift) + ' ' + ri(), answer: word.toLowerCase() };
   },
 
   sorting() {
     const v = pick(['sort_letters', 'sort_numbers', 'sort_reverse']);
     if (v === 'sort_letters') {
       const w = randChars(UPPER, randInt(5, 8));
-      return { prompt: `Sort these letters in alphabetical order: ${w}\nReply with ONLY the sorted letters as one word, nothing else.`, answer: [...w].sort().join('').toLowerCase() };
+      const t = pick([x => `Sort these letters in alphabetical order: ${x}`, x => `Arrange the letters ${x} from A to Z.`, x => `Put these letters in alphabetical sequence: ${x}`]);
+      return { prompt: t(w) + ' ' + ri(), answer: [...w].sort().join('').toLowerCase() };
     } else if (v === 'sort_numbers') {
       const nums = []; const seen = new Set();
       while (nums.length < randInt(5, 7)) { const n = randInt(1, 99); if (!seen.has(n)) { nums.push(n); seen.add(n); } }
-      return { prompt: `Sort these numbers from smallest to largest: ${nums.join(', ')}\nReply with ONLY the sorted numbers separated by commas, nothing else.`, answer: [...nums].sort((a, b) => a - b).join(', ') };
+      const t = pick([x => `Sort these numbers from smallest to largest: ${x}`, x => `Arrange in ascending order: ${x}`, x => `Put these numbers in order from lowest to highest: ${x}`]);
+      return { prompt: t(nums.join(', ')) + ' ' + ri(), answer: [...nums].sort((a, b) => a - b).join(', ') };
     } else {
       const w = randChars(UPPER, randInt(5, 7));
-      return { prompt: `Sort these letters in REVERSE alphabetical order (Z first, A last): ${w}\nReply with ONLY the sorted letters as one word, nothing else.`, answer: [...w].sort().reverse().join('').toLowerCase() };
+      const t = pick([x => `Sort these letters in REVERSE alphabetical order (Z first, A last): ${x}`, x => `Arrange the letters ${x} from Z to A.`, x => `Put these letters in reverse alphabetical order: ${x}`]);
+      return { prompt: t(w) + ' ' + ri(), answer: [...w].sort().reverse().join('').toLowerCase() };
     }
   },
 
   counting() {
     const v = pick(['count_letter', 'count_consonants', 'count_digits', 'count_upper']);
     if (v === 'count_letter') {
-      const target = UPPER[randInt(0, 25)];
-      const len = randInt(10, 18);
+      const target = UPPER[randInt(0, 25)], len = randInt(10, 18);
       let chars = Array(randInt(2, 5)).fill(target);
       while (chars.length < len) chars.push(UPPER[randInt(0, 25)]);
       chars = chars.sort(() => Math.random() - 0.5);
       const text = chars.join('');
-      return { prompt: `How many times does the letter "${target}" appear in "${text}"? Reply with ONLY the number, nothing else.`, answer: String(text.split(target).length - 1) };
+      const t = pick([
+        (tg,tx) => `How many times does the letter "${tg}" appear in "${tx}"?`,
+        (tg,tx) => `Count the occurrences of "${tg}" in the string "${tx}".`,
+        (tg,tx) => `In "${tx}", how many "${tg}" characters are there?`,
+      ]);
+      return { prompt: t(target, text) + ' ' + ri(), answer: String(text.split(target).length - 1) };
     } else if (v === 'count_consonants') {
       const w = randChars(UPPER, randInt(6, 10));
-      return { prompt: `How many consonants (non-vowel letters) are in "${w}"? Reply with ONLY the number, nothing else.`, answer: String([...w].filter(c => !'AEIOU'.includes(c)).length) };
+      const t = pick([x => `How many consonants (non-vowel letters) are in "${x}"?`, x => `Count all consonants in the string "${x}".`, x => `In "${x}", how many letters are NOT vowels?`]);
+      return { prompt: t(w) + ' ' + ri(), answer: String([...w].filter(c => !'AEIOU'.includes(c)).length) };
     } else if (v === 'count_digits') {
-      const d = randChars(DIGITS, randInt(8, 14));
-      const target = d[randInt(0, d.length - 1)];
-      return { prompt: `How many times does the digit "${target}" appear in "${d}"? Reply with ONLY the number, nothing else.`, answer: String(d.split(target).length - 1) };
+      const d = randChars(DIGITS, randInt(8, 14)), target = d[randInt(0, d.length - 1)];
+      const t = pick([(tg,dd) => `How many times does the digit "${tg}" appear in "${dd}"?`, (tg,dd) => `Count how often "${tg}" occurs in the number string "${dd}".`]);
+      return { prompt: t(target, d) + ' ' + ri(), answer: String(d.split(target).length - 1) };
     } else {
       const text = randChars(LETTERS_ALL, randInt(10, 16));
-      return { prompt: `How many UPPERCASE letters are in "${text}"? Reply with ONLY the number, nothing else.`, answer: String([...text].filter(c => c >= 'A' && c <= 'Z').length) };
+      const t = pick([x => `How many UPPERCASE letters are in "${x}"?`, x => `Count the capital letters in "${x}".`, x => `In the mixed-case string "${x}", how many characters are uppercase?`]);
+      return { prompt: t(text) + ' ' + ri(), answer: String([...text].filter(c => c >= 'A' && c <= 'Z').length) };
     }
   },
 
@@ -180,32 +279,41 @@ const CHALLENGE_TYPES = {
     const v = pick(['remove_vowels', 'remove_consonants', 'first_letters', 'last_letters']);
     if (v === 'remove_vowels') {
       const w = pronounceable(randInt(5, 8));
-      return { prompt: `Remove all vowels (A, E, I, O, U) from "${w}".\nReply with ONLY the remaining letters, nothing else.`, answer: [...w].filter(c => !'AEIOU'.includes(c)).join('').toLowerCase() };
+      const t = pick([x => `Remove all vowels (A, E, I, O, U) from "${x}".`, x => `Delete every vowel from the string "${x}". What remains?`, x => `Strip out A, E, I, O, and U from "${x}".`]);
+      return { prompt: t(w) + ' ' + ri(), answer: [...w].filter(c => !'AEIOU'.includes(c)).join('').toLowerCase() };
     } else if (v === 'remove_consonants') {
       let w = randChars(UPPER, randInt(6, 10));
       const vowels = [...w].filter(c => 'AEIOU'.includes(c)).join('');
-      if (!vowels) return CHALLENGE_TYPES.transform(); // retry
-      return { prompt: `Remove all consonants from "${w}" and keep only the vowels (A, E, I, O, U).\nReply with ONLY the remaining vowels, nothing else.`, answer: vowels.toLowerCase() };
+      if (!vowels) return CHALLENGE_TYPES.transform();
+      const t = pick([x => `Remove all consonants from "${x}" and keep only the vowels (A, E, I, O, U).`, x => `Extract only the vowels from "${x}".`, x => `From the string "${x}", delete every consonant and keep only vowels.`]);
+      return { prompt: t(w) + ' ' + ri(), answer: vowels.toLowerCase() };
     } else if (v === 'first_letters') {
       const words = Array.from({length: randInt(4, 7)}, () => { let w = randChars('abcdefghijklmnopqrstuvwxyz', randInt(3, 7)); return w[0].toUpperCase() + w.slice(1); });
-      return { prompt: `What do the first letters of each word spell: "${words.join(' ')}"?\nReply with ONLY the letters as one word, nothing else.`, answer: words.map(w => w[0]).join('').toLowerCase() };
+      const s = words.join(' ');
+      const t = pick([x => `What do the first letters of each word spell: "${x}"?`, x => `Take the initial letter of every word in "${x}" and combine them.`, x => `Form an acronym from: "${x}".`]);
+      return { prompt: t(s) + ' ' + ri(), answer: words.map(w => w[0]).join('').toLowerCase() };
     } else {
       const words = Array.from({length: randInt(4, 6)}, () => { let w = randChars('abcdefghijklmnopqrstuvwxyz', randInt(3, 6)); return w[0].toUpperCase() + w.slice(1); });
-      return { prompt: `What do the LAST letters of each word spell: "${words.join(' ')}"?\nReply with ONLY the letters as one word, nothing else.`, answer: words.map(w => w[w.length - 1]).join('').toLowerCase() };
+      const s = words.join(' ');
+      const t = pick([x => `What do the LAST letters of each word spell: "${x}"?`, x => `Take the final letter of each word in "${x}" and combine them.`, x => `Extract the ending letter from every word in "${x}" and join them.`]);
+      return { prompt: t(s) + ' ' + ri(), answer: words.map(w => w[w.length - 1]).join('').toLowerCase() };
     }
   },
 
   binary() {
     const v = pick(['binary_to_decimal', 'decimal_to_binary', 'digit_sum']);
     if (v === 'binary_to_decimal') {
-      const num = randInt(1, 63);
-      return { prompt: `Convert binary ${num.toString(2)} to decimal. Reply with ONLY the decimal number, nothing else.`, answer: String(num) };
+      const num = randInt(1, 63), b = num.toString(2);
+      const t = pick([x => `Convert binary ${x} to decimal.`, x => `What is the decimal value of the binary number ${x}?`, x => `Express ${x} (binary) as a base-10 number.`]);
+      return { prompt: t(b) + ' ' + ri(), answer: String(num) };
     } else if (v === 'decimal_to_binary') {
       const num = randInt(1, 31);
-      return { prompt: `Convert the decimal number ${num} to binary. Reply with ONLY the binary digits (no prefix like 0b), nothing else.`, answer: num.toString(2) };
+      const t = pick([n => `Convert the decimal number ${n} to binary.`, n => `What is ${n} in binary?`, n => `Write ${n} as a binary number (no 0b prefix).`]);
+      return { prompt: t(num) + ' ' + ri(), answer: num.toString(2) };
     } else {
       const num = randInt(1000, 99999);
-      return { prompt: `What is the sum of all digits in ${num}? Reply with ONLY the number, nothing else.`, answer: String([...String(num)].reduce((s, d) => s + Number(d), 0)) };
+      const t = pick([n => `What is the sum of all digits in ${n}?`, n => `Add each digit of ${n} together.`, n => `Calculate the digit sum of ${n}.`]);
+      return { prompt: t(num) + ' ' + ri(), answer: String([...String(num)].reduce((s, d) => s + Number(d), 0)) };
     }
   },
 };

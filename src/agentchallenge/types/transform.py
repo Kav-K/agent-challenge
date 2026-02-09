@@ -3,6 +3,7 @@
 import random
 import string
 from typing import Tuple
+from ..templates import TRANSFORM_TEMPLATES, reply_inst
 
 CONSONANTS = "BCDFGHJKLMNPQRSTVWXYZ"
 VOWELS = "AEIOU"
@@ -23,23 +24,18 @@ class TransformChallenge:
                 for i in range(length)
             )
             result = ''.join(c for c in word if c not in 'AEIOU')
-            prompt = (
-                f"Remove all vowels (A, E, I, O, U) from \"{word}\".\n"
-                f"Reply with ONLY the remaining letters, nothing else."
-            )
+            template = random.choice(TRANSFORM_TEMPLATES["remove_vowels"])
+            prompt = template(word) + " " + reply_inst()
             return prompt, result.lower()
 
         elif variant == "remove_consonants":
             length = random.randint(6, 10)
             word = ''.join(random.choices(string.ascii_uppercase, k=length))
             result = ''.join(c for c in word if c in 'AEIOU')
-            # Ensure there are some vowels
             if not result:
                 return TransformChallenge.generate()
-            prompt = (
-                f"Remove all consonants from \"{word}\" and keep only the vowels (A, E, I, O, U).\n"
-                f"Reply with ONLY the remaining vowels, nothing else."
-            )
+            template = random.choice(TRANSFORM_TEMPLATES["remove_consonants"])
+            prompt = template(word) + " " + reply_inst()
             return prompt, result.lower()
 
         elif variant == "first_letters":
@@ -47,14 +43,11 @@ class TransformChallenge:
             words = []
             for _ in range(word_count):
                 w_len = random.randint(3, 7)
-                words.append(''.join(random.choices(string.ascii_lowercase, k=w_len)))
-            words = [w.capitalize() for w in words]
+                words.append(''.join(random.choices(string.ascii_lowercase, k=w_len)).capitalize())
             result = ''.join(w[0] for w in words)
             sentence = ' '.join(words)
-            prompt = (
-                f"What do the first letters of each word spell: \"{sentence}\"?\n"
-                f"Reply with ONLY the letters as one word, nothing else."
-            )
+            template = random.choice(TRANSFORM_TEMPLATES["first_letters"])
+            prompt = template(sentence) + " " + reply_inst()
             return prompt, result.lower()
 
         elif variant == "last_letters":
@@ -62,16 +55,12 @@ class TransformChallenge:
             words = []
             for _ in range(word_count):
                 w_len = random.randint(3, 6)
-                words.append(''.join(random.choices(string.ascii_lowercase, k=w_len)))
-            words = [w.capitalize() for w in words]
+                words.append(''.join(random.choices(string.ascii_lowercase, k=w_len)).capitalize())
             result = ''.join(w[-1] for w in words)
             sentence = ' '.join(words)
-            prompt = (
-                f"What do the LAST letters of each word spell: \"{sentence}\"?\n"
-                f"Reply with ONLY the letters as one word, nothing else."
-            )
+            template = random.choice(TRANSFORM_TEMPLATES["last_letters"])
+            prompt = template(sentence) + " " + reply_inst()
             return prompt, result.lower()
 
         else:
-            # Fallback: try another variant
             return TransformChallenge.generate()

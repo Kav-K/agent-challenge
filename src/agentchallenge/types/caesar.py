@@ -2,6 +2,7 @@
 
 import random
 from typing import Tuple
+from ..templates import CAESAR_TEMPLATES, reply_inst
 
 CONSONANTS = "BCDFGHJKLMNPQRSTVWXYZ"
 VOWELS = "AEIOU"
@@ -27,8 +28,6 @@ class CaesarChallenge:
         word = _random_pronounceable(random.randint(4, 7))
         shift = random.choice([3, 5, 7, 11])
         encoded = _caesar_encode(word, shift)
-        prompt = (
-            f"Decode this Caesar cipher (each letter is shifted {shift} positions forward in the alphabet): {encoded}\n"
-            f"Shift each letter {shift} positions BACKWARD to decode. Reply with ONLY the decoded word, nothing else."
-        )
+        template = random.choice(CAESAR_TEMPLATES)
+        prompt = template(encoded, shift) + " " + reply_inst()
         return prompt, word.lower()
