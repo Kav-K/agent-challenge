@@ -41,6 +41,11 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Swap to JS-first README for npm
+        run: |
+          cp README.md README.github.md
+          cp README.npm.md README.md
+
       - name: Publish to npm
         run: npm publish --access public
         env:

@@ -123,6 +123,7 @@ class AgentChallenge:
         difficulty: str = "easy",
         ttl: int = 300,
         types: Optional[list] = None,
+        persistent: bool = True,
     ):
         if not secret or len(secret) < 8:
             raise ValueError("Secret must be at least 8 characters")
@@ -130,6 +131,7 @@ class AgentChallenge:
         self._difficulty = difficulty
         self._ttl = ttl
         self._allowed_types = types
+        self._persistent = persistent
 
         # Dynamic mode state
         self._dynamic_enabled = False
@@ -315,6 +317,8 @@ class AgentChallenge:
         """
         # Mode 1: Agent has a persistent token — verify it
         if token:
+            if not self._persistent:
+                return GateResult(status="error", error="Persistent tokens are disabled")
             if self.verify_token(token):
                 return GateResult(status="authenticated")
             return GateResult(status="error", error="Invalid or expired token")
@@ -323,8 +327,10 @@ class AgentChallenge:
         if challenge_token and answer:
             result = self.verify(challenge_token, answer)
             if result.valid:
-                new_token = self.create_token()
-                return GateResult(status="authenticated", token=new_token)
+                if self._persistent:
+                    new_token = self.create_token()
+                    return GateResult(status="authenticated", token=new_token)
+                return GateResult(status="authenticated")
             return GateResult(status="error", error=result.error or "Incorrect answer")
 
         # Mode 3: No token, no answer — issue a new challenge

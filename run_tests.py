@@ -539,6 +539,44 @@ def _():
     assert r2.status == "authenticated"
 
 
+print("\n── Persistent Toggle ───────────────────────────")
+
+@test("persistent=False: gate solve returns authenticated without token")
+def _():
+    ac = AgentChallenge(secret="persist-test-12345", persistent=False, difficulty="easy")
+    from agentchallenge.types import generate_challenge as _gc
+    ctype, prompt, answer = _gc(difficulty="easy")
+    c = ac._build_challenge(ctype, prompt, answer)
+    r = ac.gate(challenge_token=c.token, answer=answer)
+    assert r.status == "authenticated"
+    assert r.token is None, "Should NOT return a token when persistent=False"
+
+@test("persistent=False: passing a token returns error")
+def _():
+    ac = AgentChallenge(secret="persist-test-12345", persistent=False)
+    token = ac.create_token("agent-1")  # can still create manually
+    r = ac.gate(token=token)
+    assert r.status == "error"
+    assert "disabled" in r.error.lower()
+
+@test("persistent=False: no args still returns challenge")
+def _():
+    ac = AgentChallenge(secret="persist-test-12345", persistent=False)
+    r = ac.gate()
+    assert r.status == "challenge_required"
+    assert r.prompt is not None
+
+@test("persistent=True (default): gate solve returns token")
+def _():
+    ac = AgentChallenge(secret="persist-test-12345", difficulty="easy")
+    from agentchallenge.types import generate_challenge as _gc
+    ctype, prompt, answer = _gc(difficulty="easy")
+    c = ac._build_challenge(ctype, prompt, answer)
+    r = ac.gate(challenge_token=c.token, answer=answer)
+    assert r.status == "authenticated"
+    assert r.token is not None, "Should return a token when persistent=True"
+    assert r.token.startswith("eyJ"), "Token should be base64 encoded"
+
 print("\n── Dynamic Mode ────────────────────────────────")
 
 @test("Dynamic mode: set_openai_api_key stores key")
