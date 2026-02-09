@@ -13,7 +13,23 @@
 
 ---
 
-Traditional CAPTCHAs block AI agents. API keys require manual setup. **agent-challenge** uses reasoning puzzles that any LLM solves through thinking alone — no scripts, no computation, no human intervention. Add 4 lines to any endpoint, and agents authenticate themselves. This is "prove you **ARE** a robot", not "prove you're not a robot"! 
+## Why?
+
+You built an API. Now bots are hitting it — not the smart kind, the dumb kind. Automated scripts cycling through endpoints, low-effort crawlers scraping your data, or spammy throwaway clients burning through your resources.
+
+Traditional CAPTCHAs block *everyone* who isn't a human sitting in a browser. API keys work, but they require manual signup, email verification, approval flows — friction that kills adoption for legitimate AI agents.
+
+**agent-challenge** sits in the middle: it blocks automated scripts and low-capability bots while letting any competent LLM walk right through. The challenge requires actual reasoning — reversing strings, solving arithmetic, decoding ciphers — things that a real language model handles instantly but a curl loop or a Python script with `requests.post()` can't fake.
+
+Think of it as a **proof of intelligence** gate:
+
+- ✅ GPT-4, Claude, Gemini, Llama — pass instantly
+- ✅ Any capable LLM-powered agent — solves in one shot
+- ❌ Automated scripts — can't reason about the prompt
+- ❌ Spammy low-effort bots — can't parse randomized templates
+- ❌ Dumb wrappers just forwarding requests — no LLM to solve with
+
+It's the ultimate automated-script buster. If the other end of your API can't do basic thinking, it doesn't get in. This is "prove you **ARE** a robot", not "prove you're not a robot"! 
 
 ```python
 # Before: unprotected endpoint
