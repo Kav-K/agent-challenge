@@ -466,7 +466,8 @@ def _():
         if ch.challenge_type != "dynamic":
             static_fallbacks += 1
             print(f"      Round {i+1}: fell back to static ({ch.challenge_type})")
-        answer = call_openai(ch.prompt)
+        # Use gpt-4o to solve — dynamic generates agentic-level challenges
+        answer = call_openai(ch.prompt, model="gpt-4o")
         result = ac.verify(token=ch.token, answer=answer)
         if result.valid:
             solved += 1
