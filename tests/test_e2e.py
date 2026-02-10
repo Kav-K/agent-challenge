@@ -372,22 +372,21 @@ def _():
 
 @test("E2E Gate: tampered token rejected")
 def _():
+    from agentchallenge.types import generate_challenge as _gc
+    ac = AgentChallenge(secret="e2e-gate-secret-123", difficulty="easy", types=["simple_math"])
     srv = MockAPIServer("e2e-gate-secret-123", difficulty="easy", types=["simple_math"]).start()
     try:
-        # Get a valid token first
-        code, data = api_call(srv.url)
-        prompt = data["prompt"]
-        ct = data["challenge_token"]
-        answer = solve_challenge(prompt)
-        if answer:
-            code, data = api_call(srv.url, body={"challenge_token": ct, "answer": answer})
-            assert code == 200
-            token = data["token"]
+        # Get a valid token via known answer
+        ctype, prompt, answer = _gc(difficulty="easy", specific_type="simple_math")
+        ch = ac._build_challenge(ctype, prompt, answer)
+        code, data = api_call(srv.url, body={"challenge_token": ch.token, "answer": answer})
+        assert code == 200, f"Solve failed: {code} {data}"
+        token = data["token"]
 
-            # Tamper with it
-            tampered = token[:-1] + ("x" if token[-1] != "x" else "y")
-            code, data = api_call(srv.url, token=tampered)
-            assert code == 401
+        # Tamper with it
+        tampered = token[:-1] + ("x" if token[-1] != "x" else "y")
+        code, data = api_call(srv.url, token=tampered)
+        assert code == 401, f"Tampered token should be rejected: {code}"
     finally:
         srv.stop()
 
@@ -428,15 +427,16 @@ print("\n🔗 E2E: Lock Mode (persistent=False)")
 
 @test("E2E Lock: solve challenge → authenticated, NO token returned")
 def _():
+    from agentchallenge.types import generate_challenge as _gc
+    ac = AgentChallenge(secret="e2e-lock-secret-123", persistent=False, difficulty="easy", types=["simple_math"])
     srv = MockAPIServer("e2e-lock-secret-123", persistent=False, difficulty="easy", types=["simple_math"]).start()
     try:
-        code, data = api_call(srv.url)
-        assert code == 401
-        answer = solve_challenge(data["prompt"])
-        if answer:
-            code, data = api_call(srv.url, body={"challenge_token": data["challenge_token"], "answer": answer})
-            assert code == 200
-            assert "token" not in data, "Lock mode should NOT return a token"
+        # Use known answer to avoid solver dependency
+        ctype, prompt, answer = _gc(difficulty="easy", specific_type="simple_math")
+        ch = ac._build_challenge(ctype, prompt, answer)
+        code, data = api_call(srv.url, body={"challenge_token": ch.token, "answer": answer})
+        assert code == 200, f"Expected 200, got {code}: {data}"
+        assert "token" not in data, "Lock mode should NOT return a token"
     finally:
         srv.stop()
 
@@ -455,15 +455,16 @@ def _():
 
 @test("E2E Lock: must solve every time")
 def _():
+    from agentchallenge.types import generate_challenge as _gc
+    ac = AgentChallenge(secret="e2e-lock-repeat-123", persistent=False, difficulty="easy", types=["simple_math"])
     srv = MockAPIServer("e2e-lock-repeat-123", persistent=False, difficulty="easy", types=["simple_math"]).start()
     try:
         for i in range(3):
-            code, data = api_call(srv.url)
-            assert code == 401, f"Round {i+1}: Expected challenge"
-            answer = solve_challenge(data["prompt"])
-            if answer:
-                code, data = api_call(srv.url, body={"challenge_token": data["challenge_token"], "answer": answer})
-                assert code == 200, f"Round {i+1}: Correct answer should work"
+            # Each round: new challenge with known answer
+            ctype, prompt, answer = _gc(difficulty="easy", specific_type="simple_math")
+            ch = ac._build_challenge(ctype, prompt, answer)
+            code, data = api_call(srv.url, body={"challenge_token": ch.token, "answer": answer})
+            assert code == 200, f"Round {i+1}: Expected success, got {code}: {data}"
     finally:
         srv.stop()
 
