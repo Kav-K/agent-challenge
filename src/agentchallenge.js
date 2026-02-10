@@ -36,11 +36,47 @@ function caesarEncode(text, shift) {
   return text.replace(/[A-Z]/g, c => String.fromCharCode(((c.charCodeAt(0) - 65 + shift) % 26) + 65));
 }
 
+function isPrime(n) {
+  if (n < 2) return false;
+  if (n < 4) return true;
+  if (n % 2 === 0 || n % 3 === 0) return false;
+  let i = 5;
+  while (i * i <= n) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+    i += 6;
+  }
+  return true;
+}
+
+function nextPrime(n) {
+  let c = n + 1;
+  while (!isPrime(c)) c++;
+  return c;
+}
+
 const NUM_WORDS = {
   0:'zero',1:'one',2:'two',3:'three',4:'four',5:'five',6:'six',7:'seven',8:'eight',9:'nine',10:'ten',
   11:'eleven',12:'twelve',13:'thirteen',14:'fourteen',15:'fifteen',16:'sixteen',17:'seventeen',18:'eighteen',
   19:'nineteen',20:'twenty'
 };
+
+const SIMPLE_WORDS = [
+  'apple','banana','cherry','date','fig','grape','kiwi','lemon',
+  'mango','orange','peach','plum','quince','rose','sage','thyme',
+  'basil','cedar','daisy','elm','fern','holly','iris','jade',
+  'lake','moon','nest','oak','pine','rain','snow','tide',
+  'wave','zinc','arch','bell','cave','dusk','echo','fork',
+];
+
+function sampleN(arr, n) {
+  const copy = [...arr];
+  const result = [];
+  for (let i = 0; i < n && copy.length > 0; i++) {
+    const idx = randInt(0, copy.length - 1);
+    result.push(copy.splice(idx, 1)[0]);
+  }
+  return result;
+}
 
 // ── Reply instruction templates (randomized per challenge) ───
 
@@ -74,28 +110,91 @@ const CHALLENGE_TYPES = {
       w => `Take the word ${w} and reverse every character.`,
       w => `Starting from the last character to the first, rewrite ${w}.`,
       w => `What is the result of reversing all characters in ${w}?`,
+      w => `Reverse this text exactly as written: ${w}.`,
+      w => `Give ${w} backwards, character by character.`,
+      w => `Write ${w} in reverse (last character first).`,
+      w => `Reverse the order of characters in the string ${w}.`,
+      w => `Mirror ${w} so the first character becomes the last.`,
+      w => `Rewrite the string ${w} from the end to the beginning.`,
+      w => `What does ${w} look like when you read it in reverse?`,
+      w => `Flip ${w} around — last letter first, first letter last.`,
     ];
     return { prompt: pick(templates)(word) + ' ' + ri(), answer: word.split('').reverse().join('').toLowerCase() };
   },
 
   simple_math() {
-    const op = pick(['+', '+', '-', '×', '++', '--']);
+    const op = pick(['+', '+', '-', '×', '++', '--', 'mixed', 'mod']);
     let prompt, answer;
     if (op === '+') {
       const a = randInt(10, 999), b = randInt(10, 999); answer = a + b;
-      prompt = pick([`What is ${a} + ${b}?`, `Calculate the sum of ${a} and ${b}.`, `Add ${a} to ${b}. What do you get?`, `If you combine ${a} and ${b}, what is the total?`]);
+      prompt = pick([
+        `What is ${a} + ${b}?`, `Calculate the sum of ${a} and ${b}.`, `Add ${a} to ${b}. What do you get?`,
+        `If you combine ${a} and ${b}, what is the total?`, `Compute ${a} plus ${b}.`,
+        `Find the result of adding ${a} and ${b} together.`, `Sum up ${a} and ${b}.`,
+        `How much is ${a} added to ${b}?`, `${a} + ${b} = ?`,
+        `Tell me what ${a} plus ${b} equals.`, `What do you get if you add ${a} and ${b}?`,
+        `Determine the value of ${a} + ${b}.`, `Please compute the sum: ${a} + ${b}.`,
+      ]);
     } else if (op === '-') {
       const a = randInt(100, 999), b = randInt(10, a - 1); answer = a - b;
-      prompt = pick([`What is ${a} - ${b}?`, `Subtract ${b} from ${a}.`, `If you take ${b} away from ${a}, what remains?`, `Calculate ${a} minus ${b}.`]);
+      prompt = pick([
+        `What is ${a} - ${b}?`, `Subtract ${b} from ${a}.`, `If you take ${b} away from ${a}, what remains?`,
+        `Calculate ${a} minus ${b}.`,
+        `Find the difference between ${a} and ${b}.`, `${a} - ${b} = ?`,
+        `How much is ${a} minus ${b}?`, `Remove ${b} from ${a}. What is left?`,
+        `Compute the result of ${a} minus ${b}.`, `What remains when ${b} is subtracted from ${a}?`,
+        `Determine ${a} - ${b}.`, `Take ${b} from ${a} and tell me the result.`,
+      ]);
     } else if (op === '×') {
       const a = randInt(2, 30), b = randInt(2, 30); answer = a * b;
-      prompt = pick([`What is ${a} × ${b}?`, `Multiply ${a} by ${b}.`, `Calculate the product of ${a} and ${b}.`, `What do you get when you multiply ${a} times ${b}?`]);
+      prompt = pick([
+        `What is ${a} × ${b}?`, `Multiply ${a} by ${b}.`, `Calculate the product of ${a} and ${b}.`,
+        `What do you get when you multiply ${a} times ${b}?`,
+        `${a} × ${b} = ?`, `Find the product of ${a} and ${b}.`,
+        `How much is ${a} multiplied by ${b}?`, `What is ${a} times ${b}?`,
+        `Compute ${a} * ${b}.`, `Tell me what ${a} times ${b} equals.`,
+        `If you multiply ${a} and ${b}, what is the result?`, `Determine the value of ${a} × ${b}.`,
+      ]);
     } else if (op === '++') {
       const a = randInt(10, 300), b = randInt(10, 300), c = randInt(10, 300); answer = a + b + c;
-      prompt = pick([`What is ${a} + ${b} + ${c}?`, `Add together ${a}, ${b}, and ${c}.`, `Find the sum of these three numbers: ${a}, ${b}, ${c}.`]);
-    } else {
+      prompt = pick([
+        `What is ${a} + ${b} + ${c}?`, `Add together ${a}, ${b}, and ${c}.`,
+        `Find the sum of these three numbers: ${a}, ${b}, ${c}.`, `Calculate ${a} plus ${b} plus ${c}.`,
+        `Sum ${a}, ${b}, and ${c}.`, `${a} + ${b} + ${c} = ?`,
+        `What is the total of ${a}, ${b}, and ${c}?`, `Combine ${a}, ${b}, and ${c}. What do you get?`,
+        `How much do ${a}, ${b}, and ${c} add up to?`, `Compute the sum of ${a}, ${b}, and ${c}.`,
+        `If you add ${a}, ${b}, and ${c}, what is the result?`, `Tell me the sum: ${a} + ${b} + ${c}.`,
+      ]);
+    } else if (op === '--') {
       const a = randInt(500, 999), b = randInt(10, 200), c = randInt(10, Math.min(200, a - b - 1)); answer = a - b - c;
-      prompt = pick([`What is ${a} - ${b} - ${c}?`, `Start with ${a}, subtract ${b}, then subtract ${c}.`, `Take ${a}, remove ${b}, then remove another ${c}. What's left?`]);
+      prompt = pick([
+        `What is ${a} - ${b} - ${c}?`, `Start with ${a}, subtract ${b}, then subtract ${c}.`,
+        `Take ${a}, remove ${b}, then remove another ${c}. What's left?`,
+        `${a} - ${b} - ${c} = ?`, `Calculate ${a} minus ${b} minus ${c}.`,
+        `From ${a}, subtract first ${b} then ${c}.`, `Begin with ${a}. Deduct ${b} and then ${c}. What remains?`,
+        `Compute ${a} - ${b} - ${c}.`, `What do you get when you subtract ${b} and ${c} from ${a}?`,
+        `Find the result: ${a} minus ${b} minus ${c}.`, `If you take away ${b} and ${c} from ${a}, what's left?`,
+      ]);
+    } else if (op === 'mixed') {
+      const a = randInt(50, 500), b = randInt(10, 300), c = randInt(10, Math.min(a + b - 1, 300)); answer = a + b - c;
+      prompt = pick([
+        `What is ${a} + ${b} - ${c}?`, `Calculate ${a} plus ${b} minus ${c}.`,
+        `Add ${a} and ${b}, then subtract ${c}. What do you get?`, `Compute the result of ${a} + ${b} - ${c}.`,
+        `${a} + ${b} - ${c} = ?`, `Start with ${a}, add ${b}, and subtract ${c}.`,
+        `Find the value of ${a} plus ${b} minus ${c}.`, `What remains if you combine ${a} and ${b}, then take away ${c}?`,
+      ]);
+    } else { // mod
+      const b = randInt(3, 20), a = randInt(b + 1, 200); answer = a % b;
+      prompt = pick([
+        `What is ${a} mod ${b}? (the remainder when ${a} is divided by ${b})`,
+        `Calculate the remainder of ${a} divided by ${b}.`,
+        `What is the remainder when ${a} is divided by ${b}?`,
+        `Compute ${a} % ${b} (modulo operation).`,
+        `Find the remainder: ${a} ÷ ${b}.`,
+        `If you divide ${a} by ${b}, what is the remainder?`,
+        `Determine ${a} modulo ${b}.`,
+        `${a} mod ${b} = ?`,
+      ]);
     }
     return { prompt: prompt + ' ' + ri(), answer: String(answer) };
   },
@@ -108,6 +207,14 @@ const CHALLENGE_TYPES = {
       w => `Assign each letter a number (A=1, B=2, through Z=26). Add up the values of all letters in "${w}".`,
       w => `Using the mapping A→1, B→2, C→3, ..., Z→26, calculate the total value of the letters in "${w}".`,
       w => `Each letter has a position in the alphabet (A=1, Z=26). What is the sum of positions for the letters in "${w}"?`,
+      w => `Given A=1, B=2, ..., Z=26, compute the sum of all letter values in "${w}".`,
+      w => `Map each letter to its alphabet position (A=1 through Z=26) and find the total for "${w}".`,
+      w => `What is the alphabet position sum for the letters in "${w}"? (A=1, B=2, ..., Z=26)`,
+      w => `For the string "${w}", convert each letter to its position number (A=1, B=2, ...) and add them all up.`,
+      w => `Calculate the total alphabetical value of "${w}" where A=1, B=2, C=3, and so on.`,
+      w => `Sum the positions of all letters in "${w}" using the scheme A=1, B=2, ..., Z=26.`,
+      w => `In "${w}", each letter has a value equal to its position in the alphabet. What is the total?`,
+      w => `Add together the alphabetic positions of every letter in "${w}" (A=1, Z=26).`,
     ];
     return { prompt: pick(templates)(word) + ' ' + ri(), answer: String(total) };
   },
@@ -120,12 +227,20 @@ const CHALLENGE_TYPES = {
       e => `Apply ROT13 decoding to the text: ${e}`,
       e => `The following text was encoded with ROT13. Decode it: ${e}`,
       e => `Shift each letter in ${e} by 13 positions in the alphabet to decode it.`,
+      e => `This string has been ROT13-encoded: ${e}. What is the decoded version?`,
+      e => `Reverse the ROT13 encoding of: ${e}`,
+      e => `Decode ${e} using the ROT13 cipher (rotate each letter by 13).`,
+      e => `The text ${e} was scrambled with ROT13. Unscramble it.`,
+      e => `Apply the ROT13 algorithm to decipher this: ${e}`,
+      e => `What does ${e} say when you undo the ROT13 encoding?`,
+      e => `Each letter in ${e} was shifted 13 places forward. Shift them back to decode.`,
+      e => `ROT13 decrypt this string: ${e}`,
     ];
     return { prompt: pick(templates)(encoded) + ' ' + ri(), answer: word.toLowerCase() };
   },
 
   pattern() {
-    const ptype = pick(['add', 'multiply', 'add_growing', 'squares', 'triangular']);
+    const ptype = pick(['add', 'multiply', 'add_growing', 'squares', 'triangular', 'fibonacci_like', 'triangular_numbers', 'primes', 'decreasing']);
     let display, answer;
     if (ptype === 'add') {
       const start = randInt(1, 50), step = randInt(2, 15);
@@ -141,10 +256,28 @@ const CHALLENGE_TYPES = {
       display = [start]; let cs = si;
       for (let j = 0; j < 4; j++) { display.push(display[display.length-1] + cs); cs += si; }
       answer = display[4] + cs;
-    } else {
+    } else if (ptype === 'add_growing') {
       const start = randInt(1, 20), is_ = randInt(1, 5);
       display = [start]; for (let i = 0; i < 4; i++) display.push(display[display.length-1] + is_ + i);
       answer = display[4] + is_ + 4;
+    } else if (ptype === 'fibonacci_like') {
+      const a = randInt(1, 5), b = randInt(1, 5);
+      display = [a, b];
+      for (let i = 0; i < 3; i++) display.push(display[display.length-1] + display[display.length-2]);
+      answer = display[4] + display[3];
+    } else if (ptype === 'triangular_numbers') {
+      const sn = randInt(1, 4);
+      display = Array.from({length: 5}, (_, i) => (sn + i) * (sn + i + 1) / 2);
+      answer = (sn + 5) * (sn + 6) / 2;
+    } else if (ptype === 'primes') {
+      const sp = pick([2, 3, 5, 7, 11, 13]);
+      display = [sp];
+      for (let i = 0; i < 4; i++) display.push(nextPrime(display[display.length-1]));
+      answer = nextPrime(display[4]);
+    } else { // decreasing
+      const start = randInt(80, 150), step = randInt(3, 12);
+      display = Array.from({length: 5}, (_, i) => start - step * i);
+      answer = display[4] - step;
     }
     const seq = display.join(', ');
     const templates = [
@@ -153,6 +286,14 @@ const CHALLENGE_TYPES = {
       s => `Continue this pattern: ${s}, ?`,
       s => `What number follows this sequence: ${s}, ?`,
       s => `Identify the next value in the series: ${s}, ?`,
+      s => `Determine the next number in the pattern: ${s}, ?`,
+      s => `What is the next term in this sequence: ${s}, ?`,
+      s => `Extend this series by one: ${s}, ?`,
+      s => `The sequence goes: ${s}. What comes next?`,
+      s => `Look at this pattern: ${s}. What is the next value?`,
+      s => `Given the series ${s}, find the number that follows.`,
+      s => `Here is a number sequence: ${s}. What should the next number be?`,
+      s => `Predict the next element: ${s}, ?`,
     ];
     return { prompt: pick(templates)(seq) + ' ' + ri(), answer: String(answer) };
   },
@@ -169,11 +310,27 @@ const CHALLENGE_TYPES = {
       m => `Extract every 2nd letter from this string, starting from the 1st character: ${m}`,
       m => `Take every other character from ${m}, beginning with the first.`,
       m => `From the string ${m}, pick characters at positions 1, 3, 5, 7... What do you get?`,
+      m => `Read only the odd-positioned characters in ${m} (1st, 3rd, 5th...).`,
+      m => `From ${m}, extract characters at positions 1, 3, 5, 7, and so on.`,
+      m => `Skip every other letter in ${m}, starting by keeping the first character.`,
+      m => `Take the 1st, 3rd, 5th, 7th... characters from ${m}.`,
+      m => `What do you get when you select every second character from ${m}, starting with the first?`,
+      m => `Pick out alternating characters from ${m}, beginning with the first one.`,
+      m => `In ${m}, keep only the characters at odd positions (1, 3, 5, ...).`,
+      m => `Extract characters at indices 0, 2, 4, 6... from the string ${m}.`,
     ];
     const templates3 = [
       m => `Extract every 3rd letter from this string, starting from the 1st character: ${m}`,
       m => `From ${m}, take the 1st, 4th, 7th, 10th... characters.`,
       m => `Pick every third character from ${m}, starting at position 1.`,
+      m => `From the string ${m}, select the character at position 1, then every 3rd character after that.`,
+      m => `In ${m}, extract the 1st character, then skip 2 and take the next, repeating this pattern.`,
+      m => `Read characters at positions 1, 4, 7, 10... from ${m}.`,
+      m => `Take every third letter from ${m}, beginning with the very first one.`,
+      m => `What word do you get by selecting the 1st, 4th, 7th, 10th... letters from ${m}?`,
+      m => `Skip two characters, keep one — starting from position 1 in ${m}.`,
+      m => `From ${m}, pick out characters at indices 0, 3, 6, 9...`,
+      m => `Extract every 3rd character from ${m} starting at the beginning.`,
     ];
     return { prompt: pick(n === 2 ? templates2 : templates3)(mixed) + ' ' + ri(), answer: word.toLowerCase() };
   },
@@ -186,6 +343,14 @@ const CHALLENGE_TYPES = {
         (x,y) => `What is ${x} + ${y}? Write the answer as a word (e.g., "twelve"), not a number.`,
         (x,y) => `Add ${x} and ${y}. Spell out the answer as an English word.`,
         (x,y) => `Calculate ${x} + ${y} and write the result as a word, not a digit.`,
+        (x,y) => `What is the sum of ${x} and ${y}? Respond using the English word for the number.`,
+        (x,y) => `Compute ${x} plus ${y} and express the answer as a word.`,
+        (x,y) => `${x} + ${y} = ? Write the answer as a word (like "seven"), not a numeral.`,
+        (x,y) => `Add ${x} to ${y}. Give the answer spelled out in English.`,
+        (x,y) => `Find ${x} + ${y} and write the result as an English number word.`,
+        (x,y) => `What word represents the sum of ${x} and ${y}?`,
+        (x,y) => `Sum ${x} and ${y}. Spell the answer as a word instead of a digit.`,
+        (x,y) => `Tell me ${x} plus ${y} using the English word for the number.`,
       ]);
       return { prompt: t(a, b) + ' ' + ri(), answer: NUM_WORDS[a + b] };
     } else if (v === 'char_count') {
@@ -194,6 +359,14 @@ const CHALLENGE_TYPES = {
         x => `How many characters are in the string "${x}"?`,
         x => `Count the total number of letters in "${x}".`,
         x => `What is the length of the string "${x}"?`,
+        x => `How many letters does "${x}" contain?`,
+        x => `Determine the character count of "${x}".`,
+        x => `What is the total number of characters in "${x}"?`,
+        x => `Count all the characters in the string "${x}".`,
+        x => `How long is the string "${x}"? Give the number of characters.`,
+        x => `Tell me how many letters are in "${x}".`,
+        x => `Find the length of "${x}" in characters.`,
+        x => `"${x}" — how many characters is that?`,
       ]);
       return { prompt: t(w) + ' ' + ri(), answer: String(w.length) };
     } else if (v === 'vowel_count') {
@@ -202,6 +375,14 @@ const CHALLENGE_TYPES = {
         x => `How many vowels (A, E, I, O, U) are in "${x}"?`,
         x => `Count the vowels in the string "${x}".`,
         x => `In the text "${x}", how many letters are vowels (A, E, I, O, U)?`,
+        x => `How many of the letters in "${x}" are vowels?`,
+        x => `Find the number of vowels (A, E, I, O, U) in "${x}".`,
+        x => `Count how many times A, E, I, O, or U appears in "${x}".`,
+        x => `What is the vowel count for the string "${x}"?`,
+        x => `In "${x}", tally up all the vowels (A, E, I, O, U).`,
+        x => `How many vowel letters does "${x}" contain?`,
+        x => `Tell me the number of vowels in "${x}".`,
+        x => `Scan "${x}" and count every A, E, I, O, and U.`,
       ]);
       return { prompt: t(w) + ' ' + ri(), answer: String([...w].filter(c => 'AEIOU'.includes(c)).length) };
     } else {
@@ -210,6 +391,14 @@ const CHALLENGE_TYPES = {
         n => `What is the sum of the digits of ${n}?`,
         n => `Add up each individual digit in the number ${n}.`,
         n => `Take the number ${n} and sum its digits together.`,
+        n => `Calculate the digit sum of ${n}.`,
+        n => `What do you get when you add all the digits of ${n}?`,
+        n => `Sum every digit in the number ${n}.`,
+        n => `Find the total when you add each digit of ${n} individually.`,
+        n => `Break ${n} into its individual digits and add them up.`,
+        n => `What is the result of summing all digits in ${n}?`,
+        n => `Compute the digit sum: take ${n} and add up each digit.`,
+        n => `For the number ${n}, find the sum of its digits.`,
       ]);
       return { prompt: t(num) + ' ' + ri(), answer: String([...String(num)].reduce((s, d) => s + Number(d), 0)) };
     }
@@ -217,32 +406,107 @@ const CHALLENGE_TYPES = {
 
   caesar() {
     const word = pronounceable(randInt(4, 7));
-    const shift = pick([3, 5, 7, 11]);
+    const shift = randInt(1, 13);
     const encoded = caesarEncode(word, shift);
     const templates = [
       (e,s) => `Decode this Caesar cipher (each letter is shifted ${s} positions forward in the alphabet): ${e}\nShift each letter ${s} positions BACKWARD to decode.`,
       (e,s) => `The text ${e} was encrypted with a Caesar shift of ${s}. Decrypt it by shifting each letter back by ${s}.`,
       (e,s) => `Apply a reverse Caesar shift of ${s} to decode: ${e}`,
       (e,s) => `This message was encoded by shifting each letter forward by ${s} in the alphabet: ${e}. What is the original text?`,
+      (e,s) => `Decrypt the Caesar cipher ${e} by shifting each letter ${s} positions backward.`,
+      (e,s) => `Each letter in ${e} was shifted forward by ${s}. Reverse the shift to decode.`,
+      (e,s) => `The cipher text is ${e}, encoded with a shift of ${s}. What was the original message?`,
+      (e,s) => `Undo a Caesar shift of ${s} on this text: ${e}`,
+      (e,s) => `Caesar decode ${e} with shift=${s}. Move each letter ${s} places back in the alphabet.`,
+      (e,s) => `Given the Caesar-encrypted text ${e} (shift ${s}), determine the plaintext.`,
+      (e,s) => `Decipher this by reversing a ${s}-position Caesar shift: ${e}`,
+      (e,s) => `Shift every letter in ${e} backward by ${s} positions to reveal the original word.`,
     ];
     return { prompt: pick(templates)(encoded, shift) + ' ' + ri(), answer: word.toLowerCase() };
   },
 
   sorting() {
-    const v = pick(['sort_letters', 'sort_numbers', 'sort_reverse']);
+    const v = pick(['sort_letters', 'sort_numbers', 'sort_reverse', 'sort_words', 'sort_numbers_reverse']);
     if (v === 'sort_letters') {
       const w = randChars(UPPER, randInt(5, 8));
-      const t = pick([x => `Sort these letters in alphabetical order: ${x}`, x => `Arrange the letters ${x} from A to Z.`, x => `Put these letters in alphabetical sequence: ${x}`]);
+      const t = pick([
+        x => `Sort these letters in alphabetical order: ${x}`,
+        x => `Arrange the letters ${x} from A to Z.`,
+        x => `Put these letters in alphabetical sequence: ${x}`,
+        x => `Alphabetize the letters: ${x}`,
+        x => `Reorder ${x} so the letters go from A to Z.`,
+        x => `What does ${x} look like when the letters are sorted alphabetically?`,
+        x => `Arrange the characters ${x} in alphabetical order.`,
+        x => `Sort ${x} from first to last in the alphabet.`,
+        x => `Order these letters alphabetically: ${x}`,
+        x => `Take the letters ${x} and sort them A→Z.`,
+        x => `Rearrange ${x} into alphabetical order.`,
+      ]);
       return { prompt: t(w) + ' ' + ri(), answer: [...w].sort().join('').toLowerCase() };
     } else if (v === 'sort_numbers') {
       const nums = []; const seen = new Set();
-      while (nums.length < randInt(5, 7)) { const n = randInt(1, 99); if (!seen.has(n)) { nums.push(n); seen.add(n); } }
-      const t = pick([x => `Sort these numbers from smallest to largest: ${x}`, x => `Arrange in ascending order: ${x}`, x => `Put these numbers in order from lowest to highest: ${x}`]);
+      const count = randInt(5, 7);
+      while (nums.length < count) { const n = randInt(1, 99); if (!seen.has(n)) { nums.push(n); seen.add(n); } }
+      const t = pick([
+        x => `Sort these numbers from smallest to largest: ${x}`,
+        x => `Arrange in ascending order: ${x}`,
+        x => `Put these numbers in order from lowest to highest: ${x}`,
+        x => `Order these numbers from least to greatest: ${x}`,
+        x => `Sort in ascending order: ${x}`,
+        x => `Rearrange these numbers from smallest to biggest: ${x}`,
+        x => `What is the ascending order of: ${x}?`,
+        x => `List these numbers sorted from low to high: ${x}`,
+        x => `Arrange ${x} in increasing order.`,
+        x => `Put ${x} in numerical order (smallest first).`,
+        x => `Sort from minimum to maximum: ${x}`,
+      ]);
       return { prompt: t(nums.join(', ')) + ' ' + ri(), answer: [...nums].sort((a, b) => a - b).join(', ') };
-    } else {
+    } else if (v === 'sort_reverse') {
       const w = randChars(UPPER, randInt(5, 7));
-      const t = pick([x => `Sort these letters in REVERSE alphabetical order (Z first, A last): ${x}`, x => `Arrange the letters ${x} from Z to A.`, x => `Put these letters in reverse alphabetical order: ${x}`]);
+      const t = pick([
+        x => `Sort these letters in REVERSE alphabetical order (Z first, A last): ${x}`,
+        x => `Arrange the letters ${x} from Z to A.`,
+        x => `Put these letters in reverse alphabetical order: ${x}`,
+        x => `Sort ${x} in descending alphabetical order.`,
+        x => `Order the letters ${x} from Z to A.`,
+        x => `Rearrange ${x} in reverse alphabetical order (Z first).`,
+        x => `What does ${x} look like sorted from Z to A?`,
+        x => `Take the letters ${x} and sort them Z→A.`,
+        x => `Arrange ${x} in reverse (Z before A).`,
+        x => `Sort these letters backwards through the alphabet: ${x}`,
+        x => `Put ${x} in descending alphabetical order.`,
+      ]);
       return { prompt: t(w) + ' ' + ri(), answer: [...w].sort().reverse().join('').toLowerCase() };
+    } else if (v === 'sort_words') {
+      const count = randInt(4, 6);
+      const words = sampleN(SIMPLE_WORDS, count);
+      const sorted = [...words].sort();
+      const t = pick([
+        x => `Sort these words alphabetically: ${x}`,
+        x => `Arrange these words in alphabetical order: ${x}`,
+        x => `Put these words in order from A to Z: ${x}`,
+        x => `Alphabetize the following words: ${x}`,
+        x => `What is the alphabetical order of: ${x}?`,
+        x => `Reorder these words alphabetically: ${x}`,
+        x => `List these words sorted A→Z: ${x}`,
+        x => `Sort from first to last alphabetically: ${x}`,
+      ]);
+      return { prompt: t(words.join(', ')) + ' ' + ri(), answer: sorted.join(', ') };
+    } else { // sort_numbers_reverse
+      const nums = []; const seen = new Set();
+      const count = randInt(5, 7);
+      while (nums.length < count) { const n = randInt(1, 99); if (!seen.has(n)) { nums.push(n); seen.add(n); } }
+      const t = pick([
+        x => `Sort these numbers from largest to smallest: ${x}`,
+        x => `Arrange in descending order: ${x}`,
+        x => `Put these numbers in order from highest to lowest: ${x}`,
+        x => `Order these numbers from greatest to least: ${x}`,
+        x => `Sort in descending order: ${x}`,
+        x => `Rearrange these numbers from biggest to smallest: ${x}`,
+        x => `List these numbers from high to low: ${x}`,
+        x => `Sort from maximum to minimum: ${x}`,
+      ]);
+      return { prompt: t(nums.join(', ')) + ' ' + ri(), answer: [...nums].sort((a, b) => b - a).join(', ') };
     }
   },
 
@@ -258,61 +522,216 @@ const CHALLENGE_TYPES = {
         (tg,tx) => `How many times does the letter "${tg}" appear in "${tx}"?`,
         (tg,tx) => `Count the occurrences of "${tg}" in the string "${tx}".`,
         (tg,tx) => `In "${tx}", how many "${tg}" characters are there?`,
+        (tg,tx) => `How often does "${tg}" show up in "${tx}"?`,
+        (tg,tx) => `Find the number of times "${tg}" appears in "${tx}".`,
+        (tg,tx) => `Scan the string "${tx}" and count every "${tg}".`,
+        (tg,tx) => `What is the frequency of the letter "${tg}" in "${tx}"?`,
+        (tg,tx) => `Count all instances of "${tg}" within "${tx}".`,
+        (tg,tx) => `How many "${tg}" letters can you find in "${tx}"?`,
+        (tg,tx) => `Tell me the count of "${tg}" in the string "${tx}".`,
+        (tg,tx) => `In the string "${tx}", tally up every occurrence of "${tg}".`,
       ]);
       return { prompt: t(target, text) + ' ' + ri(), answer: String(text.split(target).length - 1) };
     } else if (v === 'count_consonants') {
       const w = randChars(UPPER, randInt(6, 10));
-      const t = pick([x => `How many consonants (non-vowel letters) are in "${x}"?`, x => `Count all consonants in the string "${x}".`, x => `In "${x}", how many letters are NOT vowels?`]);
+      const t = pick([
+        x => `How many consonants (non-vowel letters) are in "${x}"?`,
+        x => `Count all consonants in the string "${x}".`,
+        x => `In "${x}", how many letters are NOT vowels?`,
+        x => `What is the consonant count for "${x}"?`,
+        x => `How many non-vowel letters does "${x}" contain?`,
+        x => `Find the number of consonants in "${x}".`,
+        x => `Tally the consonants in the string "${x}".`,
+        x => `Count the letters in "${x}" that are not A, E, I, O, or U.`,
+        x => `In "${x}", how many consonant characters are there?`,
+        x => `Determine the number of consonants in "${x}".`,
+        x => `How many letters in "${x}" are consonants (not vowels)?`,
+      ]);
       return { prompt: t(w) + ' ' + ri(), answer: String([...w].filter(c => !'AEIOU'.includes(c)).length) };
     } else if (v === 'count_digits') {
       const d = randChars(DIGITS, randInt(8, 14)), target = d[randInt(0, d.length - 1)];
-      const t = pick([(tg,dd) => `How many times does the digit "${tg}" appear in "${dd}"?`, (tg,dd) => `Count how often "${tg}" occurs in the number string "${dd}".`]);
+      const t = pick([
+        (tg,dd) => `How many times does the digit "${tg}" appear in "${dd}"?`,
+        (tg,dd) => `Count how often "${tg}" occurs in the number string "${dd}".`,
+        (tg,dd) => `In the string "${dd}", how many "${tg}" digits are there?`,
+        (tg,dd) => `Find the count of digit "${tg}" in "${dd}".`,
+        (tg,dd) => `Scan "${dd}" and tell me how many times "${tg}" appears.`,
+        (tg,dd) => `What is the frequency of "${tg}" in the number string "${dd}"?`,
+        (tg,dd) => `Count all occurrences of the digit "${tg}" in "${dd}".`,
+        (tg,dd) => `How often does the digit "${tg}" show up in "${dd}"?`,
+        (tg,dd) => `In "${dd}", tally every "${tg}".`,
+        (tg,dd) => `Determine how many "${tg}" digits are in "${dd}".`,
+      ]);
       return { prompt: t(target, d) + ' ' + ri(), answer: String(d.split(target).length - 1) };
     } else {
       const text = randChars(LETTERS_ALL, randInt(10, 16));
-      const t = pick([x => `How many UPPERCASE letters are in "${x}"?`, x => `Count the capital letters in "${x}".`, x => `In the mixed-case string "${x}", how many characters are uppercase?`]);
+      const t = pick([
+        x => `How many UPPERCASE letters are in "${x}"?`,
+        x => `Count the capital letters in "${x}".`,
+        x => `In the mixed-case string "${x}", how many characters are uppercase?`,
+        x => `Find the number of uppercase characters in "${x}".`,
+        x => `How many capital letters does "${x}" contain?`,
+        x => `Tally all the uppercase letters in "${x}".`,
+        x => `What is the uppercase letter count for "${x}"?`,
+        x => `In "${x}", count every character that is a capital letter.`,
+        x => `How many of the letters in "${x}" are uppercase?`,
+        x => `Scan "${x}" and count the uppercase letters.`,
+        x => `Tell me the number of capital letters in "${x}".`,
+      ]);
       return { prompt: t(text) + ' ' + ri(), answer: String([...text].filter(c => c >= 'A' && c <= 'Z').length) };
     }
   },
 
   transform() {
-    const v = pick(['remove_vowels', 'remove_consonants', 'first_letters', 'last_letters']);
+    const v = pick(['remove_vowels', 'remove_consonants', 'first_letters', 'last_letters', 'swap_case']);
     if (v === 'remove_vowels') {
       const w = pronounceable(randInt(5, 8));
-      const t = pick([x => `Remove all vowels (A, E, I, O, U) from "${x}".`, x => `Delete every vowel from the string "${x}". What remains?`, x => `Strip out A, E, I, O, and U from "${x}".`]);
+      const t = pick([
+        x => `Remove all vowels (A, E, I, O, U) from "${x}".`,
+        x => `Delete every vowel from the string "${x}". What remains?`,
+        x => `Strip out A, E, I, O, and U from "${x}".`,
+        x => `Take "${x}" and remove all vowels.`,
+        x => `What do you get when you remove A, E, I, O, U from "${x}"?`,
+        x => `From "${x}", delete every A, E, I, O, and U.`,
+        x => `Eliminate all vowels from the string "${x}".`,
+        x => `Remove each vowel (A, E, I, O, U) from "${x}" and write what is left.`,
+        x => `Drop all the vowels from "${x}".`,
+        x => `What remains of "${x}" after removing all vowels?`,
+        x => `Strip every vowel from "${x}" and give the result.`,
+      ]);
       return { prompt: t(w) + ' ' + ri(), answer: [...w].filter(c => !'AEIOU'.includes(c)).join('').toLowerCase() };
     } else if (v === 'remove_consonants') {
       let w = randChars(UPPER, randInt(6, 10));
       const vowels = [...w].filter(c => 'AEIOU'.includes(c)).join('');
       if (!vowels) return CHALLENGE_TYPES.transform();
-      const t = pick([x => `Remove all consonants from "${x}" and keep only the vowels (A, E, I, O, U).`, x => `Extract only the vowels from "${x}".`, x => `From the string "${x}", delete every consonant and keep only vowels.`]);
+      const t = pick([
+        x => `Remove all consonants from "${x}" and keep only the vowels (A, E, I, O, U).`,
+        x => `Extract only the vowels from "${x}".`,
+        x => `From the string "${x}", delete every consonant and keep only vowels.`,
+        x => `Keep only the vowels in "${x}" and discard all consonants.`,
+        x => `What vowels appear in "${x}"? List them in order.`,
+        x => `Strip out all consonants from "${x}", keeping only A, E, I, O, U.`,
+        x => `From "${x}", remove every letter that is not a vowel.`,
+        x => `Extract the vowels from "${x}" in the order they appear.`,
+        x => `Delete all non-vowel letters from "${x}".`,
+        x => `After removing consonants from "${x}", what letters remain?`,
+        x => `Filter "${x}" to keep only vowels (A, E, I, O, U).`,
+      ]);
       return { prompt: t(w) + ' ' + ri(), answer: vowels.toLowerCase() };
     } else if (v === 'first_letters') {
       const words = Array.from({length: randInt(4, 7)}, () => { let w = randChars('abcdefghijklmnopqrstuvwxyz', randInt(3, 7)); return w[0].toUpperCase() + w.slice(1); });
       const s = words.join(' ');
-      const t = pick([x => `What do the first letters of each word spell: "${x}"?`, x => `Take the initial letter of every word in "${x}" and combine them.`, x => `Form an acronym from: "${x}".`]);
+      const t = pick([
+        x => `What do the first letters of each word spell: "${x}"?`,
+        x => `Take the initial letter of every word in "${x}" and combine them.`,
+        x => `Form an acronym from: "${x}".`,
+        x => `Create an acronym by taking the first letter of each word in "${x}".`,
+        x => `What word do the initial letters of "${x}" spell?`,
+        x => `Extract the first letter of each word in "${x}" and join them.`,
+        x => `Take the opening letter from every word in "${x}" and combine them.`,
+        x => `If you take the first letter of each word in "${x}", what do you get?`,
+        x => `Form a word from the initial letters of: "${x}".`,
+        x => `Read the first character of each word in "${x}" and string them together.`,
+        x => `What is the acronym for "${x}"?`,
+      ]);
       return { prompt: t(s) + ' ' + ri(), answer: words.map(w => w[0]).join('').toLowerCase() };
-    } else {
+    } else if (v === 'last_letters') {
       const words = Array.from({length: randInt(4, 6)}, () => { let w = randChars('abcdefghijklmnopqrstuvwxyz', randInt(3, 6)); return w[0].toUpperCase() + w.slice(1); });
       const s = words.join(' ');
-      const t = pick([x => `What do the LAST letters of each word spell: "${x}"?`, x => `Take the final letter of each word in "${x}" and combine them.`, x => `Extract the ending letter from every word in "${x}" and join them.`]);
+      const t = pick([
+        x => `What do the LAST letters of each word spell: "${x}"?`,
+        x => `Take the final letter of each word in "${x}" and combine them.`,
+        x => `Extract the ending letter from every word in "${x}" and join them.`,
+        x => `What word do the last letters of each word in "${x}" spell?`,
+        x => `Read the final character of each word in "${x}" and combine them.`,
+        x => `If you take the last letter of every word in "${x}", what do you get?`,
+        x => `From "${x}", pick the ending letter of each word and join them together.`,
+        x => `Collect the last letter of every word in "${x}" and form a string.`,
+        x => `Extract the terminal letter from each word in "${x}" and concatenate them.`,
+        x => `What do you get when you take the final letter of each word in "${x}"?`,
+        x => `Take the closing letter of every word in "${x}" and put them together.`,
+      ]);
       return { prompt: t(s) + ' ' + ri(), answer: words.map(w => w[w.length - 1]).join('').toLowerCase() };
+    } else { // swap_case
+      const w = randChars(LETTERS_ALL, randInt(5, 9));
+      const swapped = [...w].map(c => c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase()).join('');
+      const t = pick([
+        x => `Swap the case of every letter in "${x}" (uppercase becomes lowercase, lowercase becomes uppercase).`,
+        x => `Invert the case of each character in "${x}".`,
+        x => `Toggle uppercase and lowercase for every letter in "${x}".`,
+        x => `Change all uppercase letters to lowercase and vice versa in "${x}".`,
+        x => `What does "${x}" look like with swapped case?`,
+        x => `Flip the case of each letter in "${x}".`,
+        x => `For "${x}", convert uppercase to lowercase and lowercase to uppercase.`,
+        x => `Apply a case swap to every character in "${x}".`,
+      ]);
+      return { prompt: t(w) + ' ' + ri(), answer: swapped.toLowerCase() };
     }
   },
 
   binary() {
-    const v = pick(['binary_to_decimal', 'decimal_to_binary', 'digit_sum']);
+    const v = pick(['binary_to_decimal', 'decimal_to_binary', 'digit_sum', 'hex_to_decimal']);
     if (v === 'binary_to_decimal') {
       const num = randInt(1, 63), b = num.toString(2);
-      const t = pick([x => `Convert binary ${x} to decimal.`, x => `What is the decimal value of the binary number ${x}?`, x => `Express ${x} (binary) as a base-10 number.`]);
+      const t = pick([
+        x => `Convert binary ${x} to decimal.`,
+        x => `What is the decimal value of the binary number ${x}?`,
+        x => `Express ${x} (binary) as a base-10 number.`,
+        x => `Translate the binary number ${x} into decimal.`,
+        x => `What decimal number does the binary ${x} represent?`,
+        x => `Convert ${x} from binary to base 10.`,
+        x => `Binary ${x} equals what in decimal?`,
+        x => `Find the decimal equivalent of binary ${x}.`,
+        x => `If ${x} is a binary number, what is it in decimal?`,
+        x => `Decode the binary number ${x} into its decimal form.`,
+        x => `What base-10 number is represented by ${x} in binary?`,
+      ]);
       return { prompt: t(b) + ' ' + ri(), answer: String(num) };
     } else if (v === 'decimal_to_binary') {
       const num = randInt(1, 31);
-      const t = pick([n => `Convert the decimal number ${n} to binary.`, n => `What is ${n} in binary?`, n => `Write ${n} as a binary number (no 0b prefix).`]);
+      const t = pick([
+        n => `Convert the decimal number ${n} to binary.`,
+        n => `What is ${n} in binary?`,
+        n => `Write ${n} as a binary number (no 0b prefix).`,
+        n => `Express ${n} in binary form.`,
+        n => `Translate ${n} from decimal to binary.`,
+        n => `What does the number ${n} look like in binary?`,
+        n => `Convert ${n} to base 2.`,
+        n => `Write the binary representation of ${n}.`,
+        n => `Find the binary equivalent of the decimal number ${n}.`,
+        n => `If you convert ${n} to binary, what do you get?`,
+        n => `Represent ${n} as a binary number.`,
+      ]);
       return { prompt: t(num) + ' ' + ri(), answer: num.toString(2) };
+    } else if (v === 'hex_to_decimal') {
+      const num = randInt(10, 255);
+      const hex = num.toString(16).toUpperCase();
+      const t = pick([
+        h => `Convert hexadecimal ${h} to decimal.`,
+        h => `What is the decimal value of hex ${h}?`,
+        h => `Express ${h} (hexadecimal) as a base-10 number.`,
+        h => `Translate hex ${h} into decimal.`,
+        h => `What decimal number does the hexadecimal value ${h} represent?`,
+        h => `Convert ${h} from hex to decimal.`,
+        h => `Find the base-10 equivalent of hexadecimal ${h}.`,
+        h => `If ${h} is a hexadecimal number, what is its decimal value?`,
+      ]);
+      return { prompt: t(hex) + ' ' + ri(), answer: String(num) };
     } else {
       const num = randInt(1000, 99999);
-      const t = pick([n => `What is the sum of all digits in ${n}?`, n => `Add each digit of ${n} together.`, n => `Calculate the digit sum of ${n}.`]);
+      const t = pick([
+        n => `What is the sum of all digits in ${n}?`,
+        n => `Add each digit of ${n} together.`,
+        n => `Calculate the digit sum of ${n}.`,
+        n => `Sum the individual digits of ${n}.`,
+        n => `Break ${n} into its digits and find their total.`,
+        n => `What do you get when you add up every digit in ${n}?`,
+        n => `Compute the sum of each digit in the number ${n}.`,
+        n => `Find the digit sum of ${n}.`,
+        n => `For the number ${n}, add its digits together.`,
+        n => `What is the total of all individual digits in ${n}?`,
+        n => `Add together each digit that makes up ${n}.`,
+      ]);
       return { prompt: t(num) + ' ' + ri(), answer: String([...String(num)].reduce((s, d) => s + Number(d), 0)) };
     }
   },

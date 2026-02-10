@@ -14,7 +14,7 @@ class TransformChallenge:
     def generate() -> Tuple[str, str]:
         variant = random.choice([
             "remove_vowels", "remove_consonants", "first_letters",
-            "last_letters"
+            "last_letters", "swap_case"
         ])
 
         if variant == "remove_vowels":
@@ -60,6 +60,14 @@ class TransformChallenge:
             sentence = ' '.join(words)
             template = random.choice(TRANSFORM_TEMPLATES["last_letters"])
             prompt = template(sentence) + " " + reply_inst()
+            return prompt, result.lower()
+
+        elif variant == "swap_case":
+            length = random.randint(5, 9)
+            word = ''.join(random.choice(string.ascii_letters) for _ in range(length))
+            result = word.swapcase()
+            template = random.choice(TRANSFORM_TEMPLATES["swap_case"])
+            prompt = template(word) + " " + reply_inst()
             return prompt, result.lower()
 
         else:

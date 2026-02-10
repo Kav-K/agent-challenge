@@ -26,7 +26,7 @@ class CaesarChallenge:
     @staticmethod
     def generate() -> Tuple[str, str]:
         word = _random_pronounceable(random.randint(4, 7))
-        shift = random.choice([3, 5, 7, 11])
+        shift = random.randint(1, 13)
         encoded = _caesar_encode(word, shift)
         template = random.choice(CAESAR_TEMPLATES)
         prompt = template(encoded, shift) + " " + reply_inst()

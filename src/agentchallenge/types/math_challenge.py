@@ -9,7 +9,8 @@ class MathChallenge:
     @staticmethod
     def generate() -> Tuple[str, str]:
         variant = random.choice([
-            "add", "add", "subtract", "multiply", "add_three", "subtract_chain"
+            "add", "add", "subtract", "multiply", "add_three",
+            "subtract_chain", "mixed", "modulo"
         ])
 
         if variant == "add":
@@ -41,13 +42,28 @@ class MathChallenge:
             template = random.choice(MATH_TEMPLATES["add_three"])
             prompt = template(a, b, c)
 
-        else:  # subtract_chain
+        elif variant == "subtract_chain":
             a = random.randint(500, 999)
             b = random.randint(10, 200)
             c = random.randint(10, min(200, a - b - 1))
             answer = a - b - c
             template = random.choice(MATH_TEMPLATES["subtract_chain"])
             prompt = template(a, b, c)
+
+        elif variant == "mixed":
+            a = random.randint(50, 500)
+            b = random.randint(10, 300)
+            c = random.randint(10, min(a + b - 1, 300))
+            answer = a + b - c
+            template = random.choice(MATH_TEMPLATES["mixed"])
+            prompt = template(a, b, c)
+
+        else:  # modulo
+            b = random.randint(3, 20)
+            a = random.randint(b + 1, 200)
+            answer = a % b
+            template = random.choice(MATH_TEMPLATES["modulo"])
+            prompt = template(a, b)
 
         prompt += " " + reply_inst()
         return prompt, str(answer)
