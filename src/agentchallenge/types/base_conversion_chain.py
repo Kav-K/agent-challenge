@@ -2,14 +2,7 @@
 
 import random
 from typing import Tuple
-from ..templates import reply_inst
-
-TEMPLATES = [
-    lambda desc: f"{desc} {reply_inst()}",
-    lambda desc: f"Work through this: {desc} {reply_inst()}",
-    lambda desc: f"Solve step by step: {desc} {reply_inst()}",
-    lambda desc: f"Compute: {desc} {reply_inst()}",
-]
+from ..prompt_builder import build_prompt
 
 
 class BaseConversionChainChallenge:
@@ -55,6 +48,5 @@ class BaseConversionChainChallenge:
             answer = hex(result)[2:]
             desc = f"Multiply {a} by {b}, then convert the result to hexadecimal (lowercase)."
 
-        template = random.choice(TEMPLATES)
-        prompt = template(desc)
+        prompt = build_prompt(desc)
         return prompt, answer.lower()

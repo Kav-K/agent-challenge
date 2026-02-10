@@ -2,16 +2,7 @@
 
 import random
 from typing import Tuple
-from ..templates import reply_inst
-
-TEMPLATES = [
-    lambda desc: f"{desc} {reply_inst()}",
-    lambda desc: f"Solve this step by step: {desc} {reply_inst()}",
-    lambda desc: f"Work through this calculation: {desc} {reply_inst()}",
-    lambda desc: f"Compute the following: {desc} {reply_inst()}",
-    lambda desc: f"Figure out: {desc} {reply_inst()}",
-    lambda desc: f"What is the final answer? {desc} {reply_inst()}",
-]
+from ..prompt_builder import build_prompt
 
 
 def _digit_sum(n):
@@ -73,6 +64,5 @@ class MultiStepMathChallenge:
             answer = (a * b) + (c + d)
             desc = f"Calculate ({a} × {b}) + ({c} + {d})."
 
-        template = random.choice(TEMPLATES)
-        prompt = template(desc)
+        prompt = build_prompt(desc)
         return prompt, str(answer)

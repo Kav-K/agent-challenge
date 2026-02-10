@@ -92,6 +92,80 @@ const REPLY_INSTRUCTIONS = [
 ];
 function ri() { return pick(REPLY_INSTRUCTIONS); }
 
+// ── Dynamic Prompt Builder (anti-scripting) ──────────
+
+const WRAPPERS = [
+  '{task}',
+  'Your task: {task}',
+  'Instruction: {task}',
+  'Complete this: {task}',
+  'Please {task_lower}',
+  'I need you to {task_lower}',
+  'Can you {task_lower}',
+  "Here's a puzzle: {task}",
+  'Challenge: {task}',
+  'Quick task — {task_lower}',
+];
+
+function _randHex() {
+  const len = randInt(6, 12);
+  let s = '';
+  for (let i = 0; i < len; i++) s += '0123456789abcdef'[randInt(0, 15)];
+  return s;
+}
+
+function _randTime() {
+  return `${String(randInt(0, 23)).padStart(2, '0')}:${String(randInt(0, 59)).padStart(2, '0')}:${String(randInt(0, 59)).padStart(2, '0')}`;
+}
+
+const DECOY_GENERATORS = [
+  () => '',
+  () => '',
+  () => '',
+  () => ` (Session ${_randHex()})`,
+  () => ` [ref:${_randHex()}]`,
+  () => ` — task #${randInt(1000, 9999)}`,
+  () => ` (timestamp: ${_randTime()})`,
+  () => ` [attempt ${randInt(1, 5)}]`,
+];
+
+const REPLY_PARTS_A = [
+  'Reply with', 'Respond with', 'Give me', 'Output',
+  'Write', 'Return', 'Answer with', 'Send back',
+  'Provide', 'Type',
+];
+const REPLY_PARTS_B = [
+  'ONLY the answer', 'just the answer', 'nothing but the answer',
+  'the answer alone', 'only the final result', 'just the result',
+  'a single value only', 'the answer, nothing more',
+];
+const REPLY_PARTS_C = [
+  '.', ', nothing else.', '— no explanation.',
+  '. No extra text.', '. Keep it brief.',
+  ". That's it.", '. Just that.',
+];
+
+function dynamicReplyInst() {
+  return `${pick(REPLY_PARTS_A)} ${pick(REPLY_PARTS_B)}${pick(REPLY_PARTS_C)}`;
+}
+
+function buildPrompt(taskText) {
+  const wrapper = pick(WRAPPERS);
+  let prompt;
+  if (wrapper.includes('{task_lower}')) {
+    const lower = taskText ? taskText[0].toLowerCase() + taskText.slice(1) : taskText;
+    prompt = wrapper.replace('{task_lower}', lower);
+  } else {
+    prompt = wrapper.replace('{task}', taskText);
+  }
+  const decoy = pick(DECOY_GENERATORS)();
+  const reply = dynamicReplyInst();
+  if (Math.random() < 0.3 && Math.random() < 0.5) {
+    return `${reply} ${prompt}${decoy}`;
+  }
+  return `${prompt}${decoy} ${reply}`;
+}
+
 // ── Challenge Types (with randomized prompt templates) ───
 
 const CHALLENGE_TYPES = {
@@ -735,6 +809,347 @@ const CHALLENGE_TYPES = {
       return { prompt: t(num) + ' ' + ri(), answer: String([...String(num)].reduce((s, d) => s + Number(d), 0)) };
     }
   },
+
+  // ── New Easy types ──
+
+  string_length() {
+    const v = pick(['count_all', 'count_all_v2', 'count_no_spaces', 'count_specific', 'count_specific_v2']);
+    if (v === 'count_all') {
+      const w = randChars(UPPER, randInt(4, 12));
+      const t = pick([
+        x => `How many characters are in "${x}"?`,
+        x => `Count the characters in the string "${x}".`,
+        x => `What is the length of "${x}"?`,
+        x => `How long is the string "${x}" in characters?`,
+        x => `Tell me how many characters "${x}" contains.`,
+      ]);
+      return { prompt: t(w) + ' ' + ri(), answer: String(w.length) };
+    } else if (v === 'count_all_v2') {
+      const w = randChars(UPPER + DIGITS, randInt(5, 12));
+      const t = pick([
+        x => `How many characters (letters and digits) are in "${x}"?`,
+        x => `What is the total character count of "${x}"?`,
+        x => `Count every character in "${x}".`,
+        x => `Determine the length of "${x}".`,
+        x => `"${x}" has how many characters?`,
+      ]);
+      return { prompt: t(w) + ' ' + ri(), answer: String(w.length) };
+    } else if (v === 'count_no_spaces') {
+      const words = Array.from({ length: randInt(2, 4) }, () => randChars(UPPER, randInt(3, 6)));
+      const phrase = words.join(' ');
+      const noSpaces = phrase.replace(/ /g, '').length;
+      const t = pick([
+        p => `How many characters are in "${p}", not counting spaces?`,
+        p => `Count the non-space characters in "${p}".`,
+        p => `In "${p}", how many characters are there excluding spaces?`,
+        p => `Ignoring spaces, what is the character count of "${p}"?`,
+        p => `How many letters are in "${p}" if you skip spaces?`,
+      ]);
+      return { prompt: t(phrase) + ' ' + ri(), answer: String(noSpaces) };
+    } else {
+      const w = randChars(UPPER, randInt(8, 14));
+      const target = w[randInt(0, w.length - 1)];
+      const count = w.split(target).length - 1;
+      const templates = v === 'count_specific' ? [
+        (x, tg) => `How many times does the letter "${tg}" appear in "${x}"?`,
+        (x, tg) => `Count the occurrences of "${tg}" in "${x}".`,
+        (x, tg) => `In the string "${x}", how many "${tg}" characters are there?`,
+        (x, tg) => `Find the number of "${tg}" letters in "${x}".`,
+        (x, tg) => `How often does "${tg}" show up in "${x}"?`,
+      ] : [
+        (x, tg) => `Scan "${x}" and count every "${tg}".`,
+        (x, tg) => `What is the frequency of "${tg}" in the string "${x}"?`,
+        (x, tg) => `Tell me the count of "${tg}" in "${x}".`,
+        (x, tg) => `How many "${tg}" letters can you find in "${x}"?`,
+        (x, tg) => `Tally the "${tg}" characters in "${x}".`,
+      ];
+      return { prompt: pick(templates)(w, target) + ' ' + ri(), answer: String(count) };
+    }
+  },
+
+  first_last() {
+    const w = randChars(UPPER, randInt(5, 10));
+    const v = pick(['first_only', 'last_only', 'first_and_last', 'first_and_last_v2', 'first_only_v2']);
+    if (v === 'first_only' || v === 'first_only_v2') {
+      const templates = v === 'first_only' ? [
+        x => `What is the first character of "${x}"?`,
+        x => `What letter does "${x}" start with?`,
+        x => `Identify the first letter in the string "${x}".`,
+        x => `Tell me the opening character of "${x}".`,
+        x => `What character begins the string "${x}"?`,
+      ] : [
+        x => `Name the first letter of "${x}".`,
+        x => `Which letter appears first in "${x}"?`,
+        x => `Look at "${x}" — what is its first character?`,
+        x => `What is the leading character of the string "${x}"?`,
+        x => `Give me the first letter in "${x}".`,
+      ];
+      return { prompt: pick(templates)(w) + ' ' + ri(), answer: w[0].toLowerCase() };
+    } else if (v === 'last_only') {
+      const t = pick([
+        x => `What is the last character of "${x}"?`,
+        x => `What letter does "${x}" end with?`,
+        x => `Identify the final letter in the string "${x}".`,
+        x => `Tell me the closing character of "${x}".`,
+        x => `What character ends the string "${x}"?`,
+      ]);
+      return { prompt: t(w) + ' ' + ri(), answer: w[w.length - 1].toLowerCase() };
+    } else {
+      const templates = v === 'first_and_last' ? [
+        x => `What are the first and last characters of "${x}"? Give them separated by a comma.`,
+        x => `Tell me the first and last letters of "${x}", comma-separated.`,
+        x => `For the string "${x}", what are the first and last characters? (comma-separated)`,
+        x => `Identify the first and last letters in "${x}" and separate them with a comma.`,
+        x => `Give me the opening and closing characters of "${x}", separated by a comma.`,
+      ] : [
+        x => `Look at "${x}". What are its first and last characters, separated by a comma?`,
+        x => `Name the first and last letters of the string "${x}" (comma-separated).`,
+        x => `What letter starts and what letter ends "${x}"? Reply with both, comma-separated.`,
+        x => `From "${x}", extract the first and last characters, comma-separated.`,
+        x => `Tell me the beginning and ending characters of "${x}", separated by a comma.`,
+      ];
+      return { prompt: pick(templates)(w) + ' ' + ri(), answer: `${w[0].toLowerCase()}, ${w[w.length - 1].toLowerCase()}` };
+    }
+  },
+
+  // ── New Medium types ──
+
+  ascii_value() {
+    const v = pick(['char_to_code', 'code_to_char', 'sum_ascii', 'char_to_code_v2', 'code_to_char_v2']);
+    if (v === 'char_to_code') {
+      const ch = UPPER[randInt(0, 25)];
+      const t = pick([
+        c => `What is the ASCII code for the letter "${c}"?`,
+        c => `Give the ASCII value of "${c}".`,
+        c => `What number represents "${c}" in ASCII?`,
+        c => `Find the ASCII code of the character "${c}".`,
+        c => `In ASCII, what is the numeric value of "${c}"?`,
+      ]);
+      return { prompt: t(ch) + ' ' + ri(), answer: String(ch.charCodeAt(0)) };
+    } else if (v === 'char_to_code_v2') {
+      const ch = 'abcdefghijklmnopqrstuvwxyz'[randInt(0, 25)];
+      const t = pick([
+        c => `What is the ASCII code for the lowercase letter "${c}"?`,
+        c => `Determine the ASCII value of "${c}".`,
+        c => `What numeric ASCII code does the letter "${c}" have?`,
+        c => `Convert the character "${c}" to its ASCII number.`,
+        c => `Tell me the ASCII decimal value for "${c}".`,
+      ]);
+      return { prompt: t(ch) + ' ' + ri(), answer: String(ch.charCodeAt(0)) };
+    } else if (v === 'code_to_char') {
+      const code = randInt(65, 90);
+      const t = pick([
+        n => `What character has ASCII code ${n}?`,
+        n => `Which letter corresponds to ASCII value ${n}?`,
+        n => `Convert ASCII code ${n} to its character.`,
+        n => `What letter does the ASCII number ${n} represent?`,
+        n => `In ASCII, what character is code ${n}?`,
+      ]);
+      return { prompt: t(code) + ' ' + ri(), answer: String.fromCharCode(code).toLowerCase() };
+    } else if (v === 'code_to_char_v2') {
+      const code = randInt(97, 122);
+      const t = pick([
+        n => `What lowercase letter has ASCII code ${n}?`,
+        n => `ASCII code ${n} represents which character?`,
+        n => `Determine the character for ASCII value ${n}.`,
+        n => `Which letter is represented by ASCII code ${n}?`,
+        n => `If the ASCII code is ${n}, what is the letter?`,
+      ]);
+      return { prompt: t(code) + ' ' + ri(), answer: String.fromCharCode(code).toLowerCase() };
+    } else { // sum_ascii
+      const w = randChars(UPPER, randInt(3, 5));
+      const total = [...w].reduce((s, c) => s + c.charCodeAt(0), 0);
+      const t = pick([
+        x => `What is the sum of the ASCII values of all characters in "${x}"?`,
+        x => `Add together the ASCII codes of every letter in "${x}".`,
+        x => `Calculate the total ASCII value of the string "${x}".`,
+        x => `Find the sum of ASCII codes for each character in "${x}".`,
+        x => `Sum up the ASCII values of the letters in "${x}".`,
+      ]);
+      return { prompt: t(w) + ' ' + ri(), answer: String(total) };
+    }
+  },
+
+  string_math() {
+    const v = pick(['multiply_lengths', 'add_lengths', 'subtract_lengths', 'length_times_number', 'two_lengths_add_const']);
+    const rw = (min = 3, max = 7) => randChars(UPPER, randInt(min, max));
+    if (v === 'multiply_lengths') {
+      const w1 = rw(), w2 = rw();
+      const l1 = w1.length, l2 = w2.length;
+      const t = pick([
+        (a, b, la, lb) => `The string "${a}" has ${la} letters and "${b}" has ${lb} letters. What is ${la} × ${lb}?`,
+        (a, b, la, lb) => `"${a}" is ${la} characters long, "${b}" is ${lb} characters long. Multiply those two lengths.`,
+        (a, b, la, lb) => `Count the letters in "${a}" (${la}) and "${b}" (${lb}), then multiply the counts.`,
+        (a, b, la, lb) => `Find the product of the lengths of "${a}" (${la} chars) and "${b}" (${lb} chars).`,
+        (a, b, la, lb) => `If "${a}" has ${la} letters and "${b}" has ${lb}, what is ${la} times ${lb}?`,
+      ]);
+      return { prompt: t(w1, w2, l1, l2) + ' ' + ri(), answer: String(l1 * l2) };
+    } else if (v === 'add_lengths') {
+      const w1 = rw(), w2 = rw();
+      const l1 = w1.length, l2 = w2.length;
+      const t = pick([
+        (a, b, la, lb) => `"${a}" has ${la} letters and "${b}" has ${lb} letters. What is ${la} + ${lb}?`,
+        (a, b, la, lb) => `Add the lengths of "${a}" (${la}) and "${b}" (${lb}).`,
+        (a, b, la, lb) => `How many characters do "${a}" and "${b}" have combined? (${la} + ${lb})`,
+        (a, b, la, lb) => `Sum the character counts: "${a}" has ${la}, "${b}" has ${lb}.`,
+        (a, b, la, lb) => `What is the total letter count of "${a}" (${la}) plus "${b}" (${lb})?`,
+      ]);
+      return { prompt: t(w1, w2, l1, l2) + ' ' + ri(), answer: String(l1 + l2) };
+    } else if (v === 'subtract_lengths') {
+      const w1 = rw(5, 8), w2 = rw(3, 4);
+      const l1 = w1.length, l2 = w2.length;
+      const t = pick([
+        (a, b, la, lb) => `"${a}" has ${la} letters and "${b}" has ${lb} letters. What is ${la} - ${lb}?`,
+        (a, b, la, lb) => `Subtract the length of "${b}" (${lb}) from the length of "${a}" (${la}).`,
+        (a, b, la, lb) => `How many more characters does "${a}" (${la}) have than "${b}" (${lb})?`,
+        (a, b, la, lb) => `Find the difference between the lengths of "${a}" (${la}) and "${b}" (${lb}).`,
+        (a, b, la, lb) => `"${a}" is ${la} characters long, "${b}" is ${lb}. What is ${la} minus ${lb}?`,
+      ]);
+      return { prompt: t(w1, w2, l1, l2) + ' ' + ri(), answer: String(l1 - l2) };
+    } else if (v === 'length_times_number') {
+      const w = rw();
+      const n = randInt(2, 9);
+      const l = w.length;
+      const t = pick([
+        (word, num, ll) => `"${word}" has ${ll} characters. What is ${ll} × ${num}?`,
+        (word, num, ll) => `The string "${word}" is ${ll} letters long. Multiply that by ${num}.`,
+        (word, num, ll) => `Take the length of "${word}" (${ll}) and multiply by ${num}.`,
+        (word, num, ll) => `If the string "${word}" has ${ll} characters, what is ${ll} times ${num}?`,
+        (word, num, ll) => `How much is the length of "${word}" (${ll}) multiplied by ${num}?`,
+      ]);
+      return { prompt: t(w, n, l) + ' ' + ri(), answer: String(l * n) };
+    } else { // two_lengths_add_const
+      const w1 = rw(), w2 = rw();
+      const c = randInt(1, 20);
+      const l1 = w1.length, l2 = w2.length;
+      const t = pick([
+        (a, b, la, lb, k) => `Add the lengths of "${a}" (${la}) and "${b}" (${lb}), then add ${k}.`,
+        (a, b, la, lb, k) => `"${a}" has ${la} chars, "${b}" has ${lb} chars. Compute ${la} + ${lb} + ${k}.`,
+        (a, b, la, lb, k) => `Find the total: length of "${a}" (${la}) + length of "${b}" (${lb}) + ${k}.`,
+        (a, b, la, lb, k) => `Sum the character counts of "${a}" and "${b}" (${la} + ${lb}), then add ${k} more.`,
+        (a, b, la, lb, k) => `What is ${la} + ${lb} + ${k}? (lengths of "${a}" and "${b}" plus ${k})`,
+      ]);
+      return { prompt: t(w1, w2, l1, l2, c) + ' ' + ri(), answer: String(l1 + l2 + c) };
+    }
+  },
+
+  // ── New Hard types ──
+
+  substring() {
+    const w = randChars(UPPER, randInt(8, 14));
+    const v = pick(['extract_range', 'extract_range_v2', 'find_position', 'first_n', 'last_n']);
+    if (v === 'extract_range' || v === 'extract_range_v2') {
+      const maxStart = Math.max(1, w.length - 3);
+      const start = v === 'extract_range' ? randInt(1, maxStart) : randInt(2, Math.max(2, maxStart));
+      const end = Math.min(start + randInt(v === 'extract_range' ? 2 : 1, v === 'extract_range' ? 4 : 3), w.length);
+      const substr = w.slice(start - 1, end);
+      const templates = v === 'extract_range' ? [
+        (x, s, e) => `What are characters ${s} through ${e} of "${x}"? (1-indexed)`,
+        (x, s, e) => `Extract characters at positions ${s} to ${e} from "${x}".`,
+        (x, s, e) => `In the string "${x}", give me the substring from position ${s} to ${e} (inclusive, 1-indexed).`,
+        (x, s, e) => `From "${x}", what is the substring spanning positions ${s}–${e}?`,
+        (x, s, e) => `Take characters ${s} through ${e} of the string "${x}".`,
+      ] : [
+        (x, s, e) => `From "${x}", extract the characters from position ${s} to position ${e}.`,
+        (x, s, e) => `Give me characters at positions ${s} through ${e} in "${x}" (1-indexed).`,
+        (x, s, e) => `What substring do you get from positions ${s} to ${e} of "${x}"?`,
+        (x, s, e) => `Pull out characters ${s}–${e} from the string "${x}".`,
+        (x, s, e) => `Read positions ${s} through ${e} of "${x}" and write what you see.`,
+      ];
+      return { prompt: pick(templates)(w, start, end) + ' ' + ri(), answer: substr.toLowerCase() };
+    } else if (v === 'find_position') {
+      const target = w[randInt(0, w.length - 1)];
+      const pos = w.indexOf(target) + 1;
+      const t = pick([
+        (x, tg) => `At what position (1-indexed) does the letter "${tg}" first appear in "${x}"?`,
+        (x, tg) => `Find the position of the first occurrence of "${tg}" in "${x}" (1-indexed).`,
+        (x, tg) => `In "${x}", at what 1-indexed position is the first "${tg}"?`,
+        (x, tg) => `What is the 1-indexed position of the first "${tg}" in the string "${x}"?`,
+        (x, tg) => `Where does "${tg}" first appear in "${x}"? Give the 1-indexed position.`,
+      ]);
+      return { prompt: t(w, target) + ' ' + ri(), answer: String(pos) };
+    } else if (v === 'first_n') {
+      const n = randInt(2, Math.min(5, w.length));
+      const t = pick([
+        (x, k) => `What are the first ${k} characters of "${x}"?`,
+        (x, k) => `Give me the first ${k} letters of the string "${x}".`,
+        (x, k) => `Extract the opening ${k} characters from "${x}".`,
+        (x, k) => `Take the first ${k} characters of "${x}". What do you get?`,
+        (x, k) => `Read the first ${k} characters of "${x}".`,
+      ]);
+      return { prompt: t(w, n) + ' ' + ri(), answer: w.slice(0, n).toLowerCase() };
+    } else { // last_n
+      const n = randInt(2, Math.min(5, w.length));
+      const t = pick([
+        (x, k) => `What are the last ${k} characters of "${x}"?`,
+        (x, k) => `Give me the final ${k} letters of the string "${x}".`,
+        (x, k) => `Extract the last ${k} characters from "${x}".`,
+        (x, k) => `What do the last ${k} characters of "${x}" spell?`,
+        (x, k) => `Read the ending ${k} characters of "${x}".`,
+      ]);
+      return { prompt: t(w, n) + ' ' + ri(), answer: w.slice(-n).toLowerCase() };
+    }
+  },
+
+  zigzag() {
+    const v = pick(['encode_2rows', 'encode_3rows', 'encode_2rows_v2', 'encode_3rows_v2', 'encode_2rows_v3']);
+    const rows = v.includes('3rows') ? 3 : 2;
+    const w = randChars(UPPER, rows === 2 ? randInt(6, 10) : randInt(7, 12));
+
+    // Rail fence encode
+    function zigzagEncode(text, numRows) {
+      if (numRows <= 1 || numRows >= text.length) return text;
+      const rails = Array.from({ length: numRows }, () => []);
+      let row = 0, dir = 1;
+      for (const ch of text) {
+        rails[row].push(ch);
+        if (row === 0) dir = 1;
+        else if (row === numRows - 1) dir = -1;
+        row += dir;
+      }
+      return rails.flat().join('');
+    }
+
+    const result = zigzagEncode(w, rows);
+    const templates = {
+      encode_2rows: [
+        (x, r) => `Write "${x}" in a zigzag pattern with ${r} rows, then read each row left to right.`,
+        (x, r) => `Apply the rail fence cipher to "${x}" with ${r} rails. What is the result?`,
+        (x, r) => `Encode "${x}" using a zigzag pattern with ${r} rows (read rows left to right).`,
+        (x, r) => `Place the letters of "${x}" in a zigzag across ${r} rows, then read row by row.`,
+        (x, r) => `Using a ${r}-row zigzag pattern, rearrange "${x}" by reading each row left to right.`,
+      ],
+      encode_2rows_v2: [
+        (x, r) => `The string "${x}" is written in a zigzag across ${r} rows. Reading row by row gives what?`,
+        (x, r) => `Distribute "${x}" across ${r} rows in zigzag fashion. What string do you get reading rows sequentially?`,
+        (x, r) => `Rail fence cipher: encode "${x}" with ${r} rails. What is the output?`,
+        (x, r) => `Zigzag "${x}" over ${r} rows and concatenate the rows.`,
+        (x, r) => `Write "${x}" alternating between ${r} rows, then read all rows left to right.`,
+      ],
+      encode_2rows_v3: [
+        (x, r) => `Apply a ${r}-row zigzag encoding to "${x}". Give the encoded string.`,
+        (x, r) => `Rearrange "${x}" using a rail fence with ${r} rails. What do you get?`,
+        (x, r) => `Place characters of "${x}" in a ${r}-row zigzag and read across.`,
+        (x, r) => `Encode "${x}" with a zigzag cipher using ${r} rows.`,
+        (x, r) => `For the string "${x}", perform a ${r}-row rail fence cipher encode.`,
+      ],
+      encode_3rows: [
+        (x, r) => `Write "${x}" in a zigzag pattern with ${r} rows, then read each row left to right.`,
+        (x, r) => `Apply the rail fence cipher to "${x}" with ${r} rails. What is the result?`,
+        (x, r) => `Encode "${x}" using a zigzag pattern with ${r} rows (read rows left to right).`,
+        (x, r) => `Place the letters of "${x}" in a zigzag across ${r} rows, then read row by row.`,
+        (x, r) => `Using a ${r}-row zigzag pattern, rearrange "${x}" by reading each row left to right.`,
+      ],
+      encode_3rows_v2: [
+        (x, r) => `Rail fence cipher: encode "${x}" using ${r} rows. Give the result.`,
+        (x, r) => `Distribute "${x}" in a zigzag across ${r} rows, then concatenate each row.`,
+        (x, r) => `Apply a ${r}-row rail fence encode to "${x}". What string do you get?`,
+        (x, r) => `Write "${x}" zigzagging across ${r} rows and read off each row.`,
+        (x, r) => `Perform a zigzag cipher on "${x}" with ${r} rows. What is the encoded text?`,
+      ],
+    };
+    return { prompt: pick(templates[v])(w, rows) + ' ' + ri(), answer: result.toLowerCase() };
+  },
 };
 
 // ── Agentic-tier challenge types (multi-step, chain operations) ──
@@ -765,12 +1180,18 @@ const CHAINED_OPS = [
 
 CHALLENGE_TYPES.chained_transform = () => {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const len = randInt(7, 10);
-  const word = Array.from({ length: len }, () => chars[randInt(0, chars.length - 1)]).join('');
-  const chain = pick(CHAINED_OPS);
-  let result = word;
-  for (const op of chain.ops) result = op(result);
-  return { prompt: chain.desc(word) + ' ' + ri(), answer: result.toLowerCase() };
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const len = randInt(7, 10);
+    const word = Array.from({ length: len }, () => chars[randInt(0, chars.length - 1)]).join('');
+    const chain = pick(CHAINED_OPS);
+    let result = word;
+    for (const op of chain.ops) result = op(result);
+    if (result) return { prompt: buildPrompt(chain.desc(word)), answer: result.toLowerCase() };
+  }
+  // Fallback
+  const word = Array.from({ length: 8 }, () => chars[randInt(0, chars.length - 1)]).join('');
+  const result = _rot13str([...word].reverse().join(''));
+  return { prompt: buildPrompt(`Take the string "${word}", reverse it, then apply ROT13 to the result.`), answer: result.toLowerCase() };
 };
 
 CHALLENGE_TYPES.multi_step_math = () => {
@@ -796,8 +1217,7 @@ CHALLENGE_TYPES.multi_step_math = () => {
     const a = randInt(11, 30), b = randInt(11, 30), c = randInt(10, 50), d = randInt(10, 50);
     ans = (a * b) + (c + d); desc = `Calculate (${a} × ${b}) + (${c} + ${d}).`;
   }
-  const t = pick([d => d, d => `Solve this step by step: ${d}`, d => `Work through this: ${d}`, d => `Compute: ${d}`]);
-  return { prompt: t(desc) + ' ' + ri(), answer: String(ans) };
+  return { prompt: buildPrompt(desc), answer: String(ans) };
 };
 
 CHALLENGE_TYPES.base_conversion_chain = () => {
@@ -816,8 +1236,7 @@ CHALLENGE_TYPES.base_conversion_chain = () => {
     const a = randInt(5, 15), b = randInt(5, 15);
     ans = (a * b).toString(16); desc = `Multiply ${a} by ${b}, then convert the result to hexadecimal (lowercase).`;
   }
-  const t = pick([d => d, d => `Work through this: ${d}`, d => `Solve step by step: ${d}`]);
-  return { prompt: t(desc) + ' ' + ri(), answer: ans.toLowerCase() };
+  return { prompt: buildPrompt(desc), answer: ans.toLowerCase() };
 };
 
 CHALLENGE_TYPES.word_extraction_chain = () => {
@@ -847,8 +1266,7 @@ CHALLENGE_TYPES.word_extraction_chain = () => {
     const counts = words.map(w => [...w.toLowerCase()].filter(c => 'aeiou'.includes(c)).length);
     ans = counts.join(', '); desc = `Count the number of vowels in each word of "${sentence}" and list the counts separated by commas.`;
   }
-  const t = pick([d => d, d => `Follow these steps: ${d}`, d => `Work through this: ${d}`]);
-  return { prompt: t(desc) + ' ' + ri(), answer: ans.toLowerCase() };
+  return { prompt: buildPrompt(desc), answer: ans.toLowerCase() };
 };
 
 CHALLENGE_TYPES.letter_math = () => {
@@ -878,15 +1296,76 @@ CHALLENGE_TYPES.letter_math = () => {
     ans = String((pos(l1) * pos(l2)) % m);
     desc = `Multiply the value of ${l1} by ${l2}, then find the remainder when divided by ${m}.`;
   }
-  const t = pick([d => d, d => `Using A=1, B=2, ... Z=26: ${d}`, d => `Letter positions: A=1 through Z=26. ${d}`]);
-  return { prompt: t(desc) + ' ' + ri(), answer: ans };
+  const prefix = pick([
+    'Using A=1, B=2, ... Z=26: ',
+    'Letter positions: A=1 through Z=26. ',
+    'Given that each letter has a numeric value (A=1, B=2, ... Z=26): ',
+    'With A=1, B=2, C=3, ..., Z=26: ',
+  ]);
+  return { prompt: buildPrompt(prefix + desc), answer: ans };
+};
+
+CHALLENGE_TYPES.nested_operations = () => {
+  const v = pick(['double_nest', 'triple_nest', 'mixed_nest', 'subtract_nest', 'divide_nest']);
+  let desc, ans;
+  if (v === 'double_nest') {
+    const a = randInt(5, 20), b = randInt(3, 15), c = randInt(2, 6), d = randInt(1, 30);
+    ans = (a + b) * c - d;
+    desc = `What is ((${a} + ${b}) × ${c}) - ${d}?`;
+  } else if (v === 'triple_nest') {
+    const a = randInt(2, 8), b = randInt(3, 12), c = randInt(2, 10), d = randInt(5, 30);
+    ans = a * (b + c) + d;
+    desc = `What is (${a} × (${b} + ${c})) + ${d}?`;
+  } else if (v === 'mixed_nest') {
+    const a = randInt(3, 12), b = randInt(2, 8), c = randInt(3, 12), d = randInt(2, 8);
+    ans = (a * b) + (c * d);
+    desc = `Calculate (${a} × ${b}) + (${c} × ${d}).`;
+  } else if (v === 'subtract_nest') {
+    const a = randInt(2, 10), b = randInt(2, 10), c = randInt(2, 10), d = randInt(2, 5), e = randInt(1, 20);
+    ans = (a + b + c) * d - e;
+    desc = `What is ((${a} + ${b} + ${c}) × ${d}) - ${e}?`;
+  } else { // divide_nest
+    const cn = randInt(2, 8), quot = randInt(3, 15);
+    const product = cn * quot;
+    const factors = [];
+    for (let i = 2; i < product; i++) if (product % i === 0) factors.push(i);
+    const a = factors.length ? pick(factors) : 1;
+    const b = product / a;
+    const d = randInt(5, 25);
+    ans = quot + d;
+    desc = `What is (${a} × ${b}) ÷ ${cn} + ${d}?`;
+  }
+  return { prompt: buildPrompt(desc), answer: String(ans) };
+};
+
+CHALLENGE_TYPES.string_interleave = () => {
+  const v = pick(['basic_interleave', 'interleave_reverse', 'interleave_extract', 'basic_interleave_v2', 'interleave_extract_v2']);
+  const len = randInt(3, 5);
+  const w1 = randChars(UPPER, len), w2 = randChars(UPPER, len);
+  let interleaved = '';
+  for (let i = 0; i < len; i++) interleaved += w1[i] + w2[i];
+
+  if (v === 'basic_interleave') {
+    return { prompt: buildPrompt(`Interleave "${w1}" and "${w2}" character by character (first from "${w1}", then from "${w2}", alternating).`), answer: interleaved.toLowerCase() };
+  } else if (v === 'basic_interleave_v2') {
+    return { prompt: buildPrompt(`Merge "${w1}" and "${w2}" by alternating characters: take one from "${w1}", one from "${w2}", and repeat.`), answer: interleaved.toLowerCase() };
+  } else if (v === 'interleave_reverse') {
+    const reversed = [...interleaved].reverse().join('');
+    return { prompt: buildPrompt(`Interleave "${w1}" and "${w2}" character by character, then reverse the result.`), answer: reversed.toLowerCase() };
+  } else if (v === 'interleave_extract') {
+    const extracted = [...interleaved].filter((_, i) => i % 2 === 0).join('');
+    return { prompt: buildPrompt(`Interleave "${w1}" and "${w2}" character by character, then extract every 2nd character starting from position 1 (positions 1, 3, 5...).`), answer: extracted.toLowerCase() };
+  } else { // interleave_extract_v2
+    const extracted = [...interleaved].filter((_, i) => i % 2 === 1).join('');
+    return { prompt: buildPrompt(`Interleave "${w1}" and "${w2}" character by character, then take only the characters at even positions (positions 2, 4, 6...).`), answer: extracted.toLowerCase() };
+  }
 };
 
 const DIFFICULTY_MAP = {
-  easy: ['reverse_string', 'simple_math', 'pattern', 'counting'],
-  medium: ['reverse_string', 'simple_math', 'rot13', 'letter_position', 'extract_letters', 'pattern', 'counting', 'sorting', 'binary'],
-  hard: ['caesar', 'word_math', 'transform', 'binary', 'sorting', 'rot13', 'extract_letters', 'letter_position', 'counting', 'pattern', 'reverse_string', 'simple_math'],
-  agentic: ['chained_transform', 'multi_step_math', 'base_conversion_chain', 'word_extraction_chain', 'letter_math', 'caesar'],
+  easy: ['reverse_string', 'simple_math', 'pattern', 'counting', 'string_length', 'first_last'],
+  medium: ['reverse_string', 'simple_math', 'rot13', 'letter_position', 'extract_letters', 'pattern', 'counting', 'sorting', 'binary', 'ascii_value', 'string_math'],
+  hard: ['caesar', 'word_math', 'transform', 'binary', 'sorting', 'rot13', 'extract_letters', 'letter_position', 'counting', 'pattern', 'reverse_string', 'simple_math', 'substring', 'zigzag'],
+  agentic: ['chained_transform', 'multi_step_math', 'base_conversion_chain', 'word_extraction_chain', 'letter_math', 'caesar', 'nested_operations', 'string_interleave'],
 };
 
 

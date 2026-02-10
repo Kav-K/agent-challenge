@@ -3,7 +3,7 @@
 import random
 import string
 from typing import Tuple
-from ..templates import reply_inst
+from ..prompt_builder import build_prompt
 
 # Short random words for generating sentences
 def _random_word(length=None):
@@ -18,14 +18,6 @@ def _random_word(length=None):
         else:
             result.append(random.choice(vowels))
     return ''.join(result).capitalize()
-
-
-TEMPLATES = [
-    lambda desc: f"{desc} {reply_inst()}",
-    lambda desc: f"Follow these steps: {desc} {reply_inst()}",
-    lambda desc: f"Work through this: {desc} {reply_inst()}",
-    lambda desc: f"Complete this task: {desc} {reply_inst()}",
-]
 
 
 class WordExtractionChainChallenge:
@@ -75,6 +67,5 @@ class WordExtractionChainChallenge:
             answer = ', '.join(counts)
             desc = f"Count the number of vowels in each word of \"{sentence}\" and list the counts separated by commas."
 
-        template = random.choice(TEMPLATES)
-        prompt = template(desc)
+        prompt = build_prompt(desc)
         return prompt, answer.lower()

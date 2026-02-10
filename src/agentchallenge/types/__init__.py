@@ -25,8 +25,16 @@ from .multi_step_math import MultiStepMathChallenge
 from .base_conversion_chain import BaseConversionChainChallenge
 from .word_extraction_chain import WordExtractionChainChallenge
 from .letter_math import LetterMathChallenge
+from .string_length import StringLengthChallenge
+from .first_last import FirstLastChallenge
+from .ascii_value import AsciiValueChallenge
+from .string_math import StringMathChallenge
+from .substring import SubstringChallenge
+from .zigzag import ZigzagChallenge
+from .nested_operations import NestedOperationsChallenge
+from .string_interleave import StringInterleaveChallenge
 
-# Registry of all challenge types — 17 types, each with multiple random variants
+# Registry of all challenge types — 25 types, each with multiple random variants
 CHALLENGE_TYPES = {
     "reverse_string": ReverseStringChallenge,
     "simple_math": MathChallenge,
@@ -45,25 +53,37 @@ CHALLENGE_TYPES = {
     "base_conversion_chain": BaseConversionChainChallenge,
     "word_extraction_chain": WordExtractionChainChallenge,
     "letter_math": LetterMathChallenge,
+    "string_length": StringLengthChallenge,
+    "first_last": FirstLastChallenge,
+    "ascii_value": AsciiValueChallenge,
+    "string_math": StringMathChallenge,
+    "substring": SubstringChallenge,
+    "zigzag": ZigzagChallenge,
+    "nested_operations": NestedOperationsChallenge,
+    "string_interleave": StringInterleaveChallenge,
 }
 
 # Difficulty presets
 DIFFICULTY_MAP = {
     "easy": [
         "reverse_string", "simple_math", "pattern", "counting",
+        "string_length", "first_last",
     ],
     "medium": [
         "reverse_string", "simple_math", "rot13", "letter_position",
         "extract_letters", "pattern", "counting", "sorting", "binary",
+        "ascii_value", "string_math",
     ],
     "hard": [
         "caesar", "word_math", "transform", "binary", "sorting",
         "rot13", "extract_letters", "letter_position", "counting",
         "pattern", "reverse_string", "simple_math",
+        "substring", "zigzag",
     ],
     "agentic": [
         "chained_transform", "multi_step_math", "base_conversion_chain",
         "word_extraction_chain", "letter_math", "caesar",
+        "nested_operations", "string_interleave",
     ],
 }
 

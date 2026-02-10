@@ -44,6 +44,12 @@ REVERSE_TEMPLATES = [
     lambda w: f"Rewrite the string {w} from the end to the beginning.",
     lambda w: f"What does {w} look like when you read it in reverse?",
     lambda w: f"Flip {w} around — last letter first, first letter last.",
+    # 5 more
+    lambda w: f"Invert the character order of {w}.",
+    lambda w: f"Take {w} and write it back-to-front.",
+    lambda w: f"How would {w} read if you started from the last character?",
+    lambda w: f"Produce the reverse of the string {w}.",
+    lambda w: f"If you read {w} from right to left, what string do you get?",
 ]
 
 # ── Math templates ────────────────────────────────────
@@ -64,6 +70,11 @@ MATH_TEMPLATES = {
         lambda a, b: f"What do you get if you add {a} and {b}?",
         lambda a, b: f"Determine the value of {a} + {b}.",
         lambda a, b: f"Please compute the sum: {a} + {b}.",
+        lambda a, b: f"Work out {a} plus {b}.",
+        lambda a, b: f"Figure out the answer to {a} + {b}.",
+        lambda a, b: f"Give me the total of {a} and {b}.",
+        lambda a, b: f"Evaluate {a} + {b}.",
+        lambda a, b: f"If I have {a} and add {b}, what do I get?",
     ],
     "subtract": [
         lambda a, b: f"What is {a} - {b}?",
@@ -79,6 +90,11 @@ MATH_TEMPLATES = {
         lambda a, b: f"What remains when {b} is subtracted from {a}?",
         lambda a, b: f"Determine {a} - {b}.",
         lambda a, b: f"Take {b} from {a} and tell me the result.",
+        lambda a, b: f"Work out {a} minus {b}.",
+        lambda a, b: f"What do you get subtracting {b} from {a}?",
+        lambda a, b: f"Figure out {a} - {b}.",
+        lambda a, b: f"Evaluate {a} minus {b}.",
+        lambda a, b: f"Give me the result of {a} minus {b}.",
     ],
     "multiply": [
         lambda a, b: f"What is {a} × {b}?",
@@ -94,6 +110,11 @@ MATH_TEMPLATES = {
         lambda a, b: f"Tell me what {a} times {b} equals.",
         lambda a, b: f"If you multiply {a} and {b}, what is the result?",
         lambda a, b: f"Determine the value of {a} × {b}.",
+        lambda a, b: f"Work out {a} times {b}.",
+        lambda a, b: f"Calculate {a} * {b}.",
+        lambda a, b: f"Give me the product: {a} × {b}.",
+        lambda a, b: f"Evaluate {a} multiplied by {b}.",
+        lambda a, b: f"What does {a} × {b} equal?",
     ],
     "add_three": [
         lambda a, b, c: f"What is {a} + {b} + {c}?",
@@ -109,6 +130,11 @@ MATH_TEMPLATES = {
         lambda a, b, c: f"Compute the sum of {a}, {b}, and {c}.",
         lambda a, b, c: f"If you add {a}, {b}, and {c}, what is the result?",
         lambda a, b, c: f"Tell me the sum: {a} + {b} + {c}.",
+        lambda a, b, c: f"Work out {a} + {b} + {c}.",
+        lambda a, b, c: f"Evaluate the expression {a} + {b} + {c}.",
+        lambda a, b, c: f"Give me the total when you add {a}, {b}, and {c}.",
+        lambda a, b, c: f"Figure out: {a} + {b} + {c}.",
+        lambda a, b, c: f"What does {a} + {b} + {c} equal?",
     ],
     "subtract_chain": [
         lambda a, b, c: f"What is {a} - {b} - {c}?",
@@ -123,6 +149,11 @@ MATH_TEMPLATES = {
         lambda a, b, c: f"What do you get when you subtract {b} and {c} from {a}?",
         lambda a, b, c: f"Find the result: {a} minus {b} minus {c}.",
         lambda a, b, c: f"If you take away {b} and {c} from {a}, what's left?",
+        lambda a, b, c: f"Work out {a} - {b} - {c}.",
+        lambda a, b, c: f"Evaluate {a} minus {b} minus {c}.",
+        lambda a, b, c: f"Figure out: {a} - {b} - {c}.",
+        lambda a, b, c: f"What does {a} - {b} - {c} equal?",
+        lambda a, b, c: f"Give me the result of subtracting {b} and then {c} from {a}.",
     ],
     "mixed": [
         lambda a, b, c: f"What is {a} + {b} - {c}?",
@@ -133,6 +164,11 @@ MATH_TEMPLATES = {
         lambda a, b, c: f"Start with {a}, add {b}, and subtract {c}.",
         lambda a, b, c: f"Find the value of {a} plus {b} minus {c}.",
         lambda a, b, c: f"What remains if you combine {a} and {b}, then take away {c}?",
+        lambda a, b, c: f"Work out {a} + {b} - {c}.",
+        lambda a, b, c: f"Figure out: {a} plus {b} minus {c}.",
+        lambda a, b, c: f"Evaluate {a} + {b} - {c}.",
+        lambda a, b, c: f"What does {a} + {b} - {c} equal?",
+        lambda a, b, c: f"Give me the answer to {a} plus {b}, then subtract {c}.",
     ],
     "modulo": [
         lambda a, b: f"What is {a} mod {b}? (the remainder when {a} is divided by {b})",
@@ -143,6 +179,11 @@ MATH_TEMPLATES = {
         lambda a, b: f"If you divide {a} by {b}, what is the remainder?",
         lambda a, b: f"Determine {a} modulo {b}.",
         lambda a, b: f"{a} mod {b} = ?",
+        lambda a, b: f"Work out the remainder of {a} ÷ {b}.",
+        lambda a, b: f"What is left over when you divide {a} by {b}?",
+        lambda a, b: f"Figure out {a} modulo {b}.",
+        lambda a, b: f"Evaluate {a} % {b}.",
+        lambda a, b: f"Give me the modulo result: {a} mod {b}.",
     ],
 }
 
@@ -162,6 +203,11 @@ LETTER_POS_TEMPLATES = [
     lambda w: f'Sum the positions of all letters in "{w}" using the scheme A=1, B=2, ..., Z=26.',
     lambda w: f'In "{w}", each letter has a value equal to its position in the alphabet. What is the total?',
     lambda w: f'Add together the alphabetic positions of every letter in "{w}" (A=1, Z=26).',
+    lambda w: f'What is the combined alphabetical value of all letters in "{w}"? (A=1, B=2, ..., Z=26)',
+    lambda w: f'Compute the alphabet-position total for "{w}" (A=1 through Z=26).',
+    lambda w: f'If each letter equals its position (A=1, B=2, ..., Z=26), what is the total for "{w}"?',
+    lambda w: f'Determine the positional sum of "{w}" where each letter is worth its place in the alphabet.',
+    lambda w: f'For "{w}", assign A=1, B=2, ..., Z=26 and give the total.',
 ]
 
 # ── ROT13 templates ───────────────────────────────────
@@ -180,6 +226,11 @@ ROT13_TEMPLATES = [
     lambda enc: f"What does {enc} say when you undo the ROT13 encoding?",
     lambda enc: f"Each letter in {enc} was shifted 13 places forward. Shift them back to decode.",
     lambda enc: f"ROT13 decrypt this string: {enc}",
+    lambda enc: f"Perform ROT13 decoding on: {enc}",
+    lambda enc: f"The string {enc} is ROT13-encoded. Decode it back to the original.",
+    lambda enc: f"Un-ROT13 this: {enc}",
+    lambda enc: f"Rotate every letter in {enc} by 13 positions to decode it.",
+    lambda enc: f"What is the plaintext of this ROT13 cipher: {enc}?",
 ]
 
 # ── Pattern templates ─────────────────────────────────
@@ -199,6 +250,11 @@ PATTERN_TEMPLATES = [
     lambda seq: f"Given the series {seq}, find the number that follows.",
     lambda seq: f"Here is a number sequence: {seq}. What should the next number be?",
     lambda seq: f"Predict the next element: {seq}, ?",
+    lambda seq: f"Analyze the pattern: {seq}. What number is next?",
+    lambda seq: f"Work out the rule and give the next number: {seq}, ?",
+    lambda seq: f"This series follows a rule: {seq}. What is the next entry?",
+    lambda seq: f"Complete the sequence with one more number: {seq}, ?",
+    lambda seq: f"Figure out what comes after {seq}.",
 ]
 
 # ── Extract templates ─────────────────────────────────
@@ -217,6 +273,11 @@ EXTRACT_TEMPLATES = {
         lambda mixed: f"Pick out alternating characters from {mixed}, beginning with the first one.",
         lambda mixed: f"In {mixed}, keep only the characters at odd positions (1, 3, 5, ...).",
         lambda mixed: f"Extract characters at indices 0, 2, 4, 6... from the string {mixed}.",
+        lambda mixed: f"Read every other letter from {mixed}, starting with the first.",
+        lambda mixed: f"Pull out characters 1, 3, 5, 7... from the string {mixed}.",
+        lambda mixed: f"From {mixed}, keep only positions 1, 3, 5, 7... (1-indexed).",
+        lambda mixed: f"Take alternate characters from {mixed}, beginning at the start.",
+        lambda mixed: f"Select the characters at positions 0, 2, 4... in {mixed}.",
     ],
     3: [
         lambda mixed: f"Extract every 3rd letter from this string, starting from the 1st character: {mixed}",
@@ -231,6 +292,11 @@ EXTRACT_TEMPLATES = {
         lambda mixed: f"Skip two characters, keep one — starting from position 1 in {mixed}.",
         lambda mixed: f"From {mixed}, pick out characters at indices 0, 3, 6, 9...",
         lambda mixed: f"Extract every 3rd character from {mixed} starting at the beginning.",
+        lambda mixed: f"Read the 1st character of {mixed}, then every 3rd one after that.",
+        lambda mixed: f"Pull out characters at positions 1, 4, 7, 10... from {mixed}.",
+        lambda mixed: f"Select every third character from {mixed}, beginning at position 1.",
+        lambda mixed: f"From {mixed}, keep the 1st, then skip two, keep one, and repeat.",
+        lambda mixed: f"Collect characters at indices 0, 3, 6, 9... from the string {mixed}.",
     ],
 }
 
@@ -250,6 +316,11 @@ WORD_MATH_TEMPLATES = {
         lambda a, b: f"What word represents the sum of {a} and {b}?",
         lambda a, b: f"Sum {a} and {b}. Spell the answer as a word instead of a digit.",
         lambda a, b: f"Tell me {a} plus {b} using the English word for the number.",
+        lambda a, b: f"Express the sum of {a} and {b} as an English word.",
+        lambda a, b: f"Write the result of {a} + {b} as a word, not digits.",
+        lambda a, b: f"Calculate {a} + {b}. Reply with the English word for that number.",
+        lambda a, b: f"Figure out {a} + {b} and give the answer as a word.",
+        lambda a, b: f"What is {a} + {b}? Use a word, not a numeral.",
     ],
     "char_count": [
         lambda w: f'How many characters are in the string "{w}"?',
@@ -264,6 +335,11 @@ WORD_MATH_TEMPLATES = {
         lambda w: f'Tell me how many letters are in "{w}".',
         lambda w: f'Find the length of "{w}" in characters.',
         lambda w: f'"{w}" — how many characters is that?',
+        lambda w: f'Give me the character count for the string "{w}".',
+        lambda w: f'How many individual characters make up "{w}"?',
+        lambda w: f'Calculate the length of "{w}" in characters.',
+        lambda w: f'What is the size of "{w}" in terms of character count?',
+        lambda w: f'String "{w}" — count every character.',
     ],
     "vowel_count": [
         lambda w: f'How many vowels (A, E, I, O, U) are in "{w}"?',
@@ -278,6 +354,11 @@ WORD_MATH_TEMPLATES = {
         lambda w: f'How many vowel letters does "{w}" contain?',
         lambda w: f'Tell me the number of vowels in "{w}".',
         lambda w: f'Scan "{w}" and count every A, E, I, O, and U.',
+        lambda w: f'Count each vowel character in "{w}" (A, E, I, O, U).',
+        lambda w: f'What is the total number of A, E, I, O, and U in "{w}"?',
+        lambda w: f'Determine the vowel total for "{w}".',
+        lambda w: f'Go through "{w}" and count all vowels.',
+        lambda w: f'In the string "{w}", find the total vowel count.',
     ],
     "digit_sum": [
         lambda n: f"What is the sum of the digits of {n}?",
@@ -292,6 +373,11 @@ WORD_MATH_TEMPLATES = {
         lambda n: f"What is the result of summing all digits in {n}?",
         lambda n: f"Compute the digit sum: take {n} and add up each digit.",
         lambda n: f"For the number {n}, find the sum of its digits.",
+        lambda n: f"Total up each digit in {n}.",
+        lambda n: f"Find the digital root sum of {n} (add all digits).",
+        lambda n: f"What total do you get from adding the digits of {n}?",
+        lambda n: f"Decompose {n} into individual digits and sum them.",
+        lambda n: f"Digit by digit, add up {n}.",
     ],
 }
 
@@ -311,6 +397,11 @@ CAESAR_TEMPLATES = [
     lambda enc, s: f"Given the Caesar-encrypted text {enc} (shift {s}), determine the plaintext.",
     lambda enc, s: f"Decipher this by reversing a {s}-position Caesar shift: {enc}",
     lambda enc, s: f"Shift every letter in {enc} backward by {s} positions to reveal the original word.",
+    lambda enc, s: f"The text {enc} uses a Caesar cipher with shift {s}. Decode it.",
+    lambda enc, s: f"Decrypt: {enc} (Caesar shift = {s}, shift backward to decode).",
+    lambda enc, s: f"Move each letter in {enc} back {s} places in the alphabet to decode.",
+    lambda enc, s: f"What was the original text before a Caesar shift of {s} was applied to get {enc}?",
+    lambda enc, s: f"Reverse a {s}-step Caesar cipher on {enc}. What do you get?",
 ]
 
 # ── Sorting templates ─────────────────────────────────
@@ -329,6 +420,11 @@ SORTING_TEMPLATES = {
         lambda w: f"Order these letters alphabetically: {w}",
         lambda w: f"Take the letters {w} and sort them A→Z.",
         lambda w: f"Rearrange {w} into alphabetical order.",
+        lambda w: f"Put the characters of {w} in A–Z order.",
+        lambda w: f"List the letters of {w} sorted from A to Z.",
+        lambda w: f"Organize {w} alphabetically.",
+        lambda w: f"Give me {w} with its letters in alphabetical sequence.",
+        lambda w: f"How do the letters of {w} look when sorted?",
     ],
     "sort_numbers": [
         lambda nums: f"Sort these numbers from smallest to largest: {nums}",
@@ -343,6 +439,11 @@ SORTING_TEMPLATES = {
         lambda nums: f"Arrange {nums} in increasing order.",
         lambda nums: f"Put {nums} in numerical order (smallest first).",
         lambda nums: f"Sort from minimum to maximum: {nums}",
+        lambda nums: f"Place these numbers in order, smallest first: {nums}",
+        lambda nums: f"What is the sorted (ascending) form of: {nums}?",
+        lambda nums: f"Organize {nums} from lowest to highest.",
+        lambda nums: f"Give me {nums} arranged in ascending order.",
+        lambda nums: f"Rank these numbers from smallest to largest: {nums}",
     ],
     "sort_reverse": [
         lambda w: f"Sort these letters in REVERSE alphabetical order (Z first, A last): {w}",
@@ -357,6 +458,11 @@ SORTING_TEMPLATES = {
         lambda w: f"Arrange {w} in reverse (Z before A).",
         lambda w: f"Sort these letters backwards through the alphabet: {w}",
         lambda w: f"Put {w} in descending alphabetical order.",
+        lambda w: f"Give me {w} sorted from Z to A.",
+        lambda w: f"Reverse-alphabetize {w}.",
+        lambda w: f"Organize {w} in Z-to-A order.",
+        lambda w: f"List the letters of {w} sorted in descending order.",
+        lambda w: f"How does {w} look when sorted in reverse alphabetical order?",
     ],
     "sort_words": [
         lambda words: f"Sort these words alphabetically: {words}",
@@ -367,6 +473,11 @@ SORTING_TEMPLATES = {
         lambda words: f"Reorder these words alphabetically: {words}",
         lambda words: f"List these words sorted A→Z: {words}",
         lambda words: f"Sort from first to last alphabetically: {words}",
+        lambda words: f"Organize these words from A to Z: {words}",
+        lambda words: f"Give me these words in alphabetical sequence: {words}",
+        lambda words: f"How do these words sort alphabetically: {words}?",
+        lambda words: f"Place these in alphabetical order: {words}",
+        lambda words: f"Arrange A–Z: {words}",
     ],
     "sort_numbers_reverse": [
         lambda nums: f"Sort these numbers from largest to smallest: {nums}",
@@ -377,6 +488,11 @@ SORTING_TEMPLATES = {
         lambda nums: f"Rearrange these numbers from biggest to smallest: {nums}",
         lambda nums: f"List these numbers from high to low: {nums}",
         lambda nums: f"Sort from maximum to minimum: {nums}",
+        lambda nums: f"Place these numbers in order, largest first: {nums}",
+        lambda nums: f"What is the sorted (descending) form of: {nums}?",
+        lambda nums: f"Organize {nums} from highest to lowest.",
+        lambda nums: f"Give me {nums} arranged in descending order.",
+        lambda nums: f"Rank these from biggest to smallest: {nums}",
     ],
 }
 
@@ -396,6 +512,11 @@ COUNTING_TEMPLATES = {
         lambda t, text: f'How many "{t}" letters can you find in "{text}"?',
         lambda t, text: f'Tell me the count of "{t}" in the string "{text}".',
         lambda t, text: f'In the string "{text}", tally up every occurrence of "{t}".',
+        lambda t, text: f'Go through "{text}" and count each "{t}".',
+        lambda t, text: f'For the string "{text}", how many times is "{t}" present?',
+        lambda t, text: f'Determine the number of "{t}" occurrences in "{text}".',
+        lambda t, text: f'Count every "{t}" in "{text}" and give the total.',
+        lambda t, text: f'What is the total number of "{t}" characters in "{text}"?',
     ],
     "count_consonants": [
         lambda w: f'How many consonants (non-vowel letters) are in "{w}"?',
@@ -410,6 +531,11 @@ COUNTING_TEMPLATES = {
         lambda w: f'In "{w}", how many consonant characters are there?',
         lambda w: f'Determine the number of consonants in "{w}".',
         lambda w: f'How many letters in "{w}" are consonants (not vowels)?',
+        lambda w: f'Count every non-vowel character in "{w}".',
+        lambda w: f'Go through "{w}" and count only the consonants.',
+        lambda w: f'For "{w}", give the number of letters that are not vowels.',
+        lambda w: f'Tell me the total consonants in the string "{w}".',
+        lambda w: f'In "{w}", how many characters are consonants?',
     ],
     "count_digits": [
         lambda t, d: f'How many times does the digit "{t}" appear in "{d}"?',
@@ -423,6 +549,11 @@ COUNTING_TEMPLATES = {
         lambda t, d: f'How often does the digit "{t}" show up in "{d}"?',
         lambda t, d: f'In "{d}", tally every "{t}".',
         lambda t, d: f'Determine how many "{t}" digits are in "{d}".',
+        lambda t, d: f'Go through "{d}" and count every "{t}" digit.',
+        lambda t, d: f'For the number string "{d}", tell me the count of "{t}".',
+        lambda t, d: f'Count each "{t}" in the string "{d}".',
+        lambda t, d: f'What is the total number of "{t}" digits within "{d}"?',
+        lambda t, d: f'In "{d}", how many times can you find the digit "{t}"?',
     ],
     "count_upper": [
         lambda text: f'How many UPPERCASE letters are in "{text}"?',
@@ -437,6 +568,11 @@ COUNTING_TEMPLATES = {
         lambda text: f'How many of the letters in "{text}" are uppercase?',
         lambda text: f'Scan "{text}" and count the uppercase letters.',
         lambda text: f'Tell me the number of capital letters in "{text}".',
+        lambda text: f'Count every uppercase character in the string "{text}".',
+        lambda text: f'Go through "{text}" and count the capital letters.',
+        lambda text: f'For "{text}", give the number of uppercase characters.',
+        lambda text: f'How many of the characters in "{text}" are uppercase letters?',
+        lambda text: f'Determine the uppercase character count in "{text}".',
     ],
 }
 
@@ -456,6 +592,11 @@ TRANSFORM_TEMPLATES = {
         lambda w: f'Drop all the vowels from "{w}".',
         lambda w: f'What remains of "{w}" after removing all vowels?',
         lambda w: f'Strip every vowel from "{w}" and give the result.',
+        lambda w: f'Delete A, E, I, O, U from "{w}". What is left?',
+        lambda w: f'Go through "{w}" and remove every vowel character.',
+        lambda w: f'Remove the vowels from the string "{w}" and write the remainder.',
+        lambda w: f'Clear out all A, E, I, O, U characters from "{w}".',
+        lambda w: f'After deleting all vowels from "{w}", what do you have?',
     ],
     "remove_consonants": [
         lambda w: f'Remove all consonants from "{w}" and keep only the vowels (A, E, I, O, U).',
@@ -470,6 +611,11 @@ TRANSFORM_TEMPLATES = {
         lambda w: f'Delete all non-vowel letters from "{w}".',
         lambda w: f'After removing consonants from "{w}", what letters remain?',
         lambda w: f'Filter "{w}" to keep only vowels (A, E, I, O, U).',
+        lambda w: f'Eliminate every consonant from "{w}" and give the remaining vowels.',
+        lambda w: f'What are just the vowels in "{w}", in order?',
+        lambda w: f'Remove all non-vowel letters from the string "{w}".',
+        lambda w: f'Go through "{w}" and keep only A, E, I, O, U.',
+        lambda w: f'Collect all the vowels from "{w}" in their original order.',
     ],
     "first_letters": [
         lambda s: f'What do the first letters of each word spell: "{s}"?',
@@ -484,6 +630,11 @@ TRANSFORM_TEMPLATES = {
         lambda s: f'Form a word from the initial letters of: "{s}".',
         lambda s: f'Read the first character of each word in "{s}" and string them together.',
         lambda s: f'What is the acronym for "{s}"?',
+        lambda s: f'Make an acronym from the words in "{s}".',
+        lambda s: f'Join the first letter of each word in "{s}" into one string.',
+        lambda s: f'What string do you get by taking each initial letter from "{s}"?',
+        lambda s: f'Build a string from the first letters of every word in "{s}".',
+        lambda s: f'Collect the starting letter of each word in "{s}" and combine them.',
     ],
     "last_letters": [
         lambda s: f'What do the LAST letters of each word spell: "{s}"?',
@@ -498,6 +649,11 @@ TRANSFORM_TEMPLATES = {
         lambda s: f'Extract the terminal letter from each word in "{s}" and concatenate them.',
         lambda s: f'What do you get when you take the final letter of each word in "{s}"?',
         lambda s: f'Take the closing letter of every word in "{s}" and put them together.',
+        lambda s: f'Build a string from the last letters of each word in "{s}".',
+        lambda s: f'What string do the ending letters of "{s}" form?',
+        lambda s: f'Collect the final character of every word in "{s}" and combine them.',
+        lambda s: f'Join the last letter of each word in "{s}" into one string.',
+        lambda s: f'Read the terminal letter from each word in "{s}" and string them together.',
     ],
     "swap_case": [
         lambda w: f'Swap the case of every letter in "{w}" (uppercase becomes lowercase, lowercase becomes uppercase).',
@@ -508,6 +664,11 @@ TRANSFORM_TEMPLATES = {
         lambda w: f'Flip the case of each letter in "{w}".',
         lambda w: f'For "{w}", convert uppercase to lowercase and lowercase to uppercase.',
         lambda w: f'Apply a case swap to every character in "{w}".',
+        lambda w: f'Convert every uppercase letter in "{w}" to lowercase and vice versa.',
+        lambda w: f'Reverse the case of each character in "{w}".',
+        lambda w: f'For each letter in "{w}", switch uppercase to lowercase and lowercase to uppercase.',
+        lambda w: f'If you swap the case of every letter in "{w}", what do you get?',
+        lambda w: f'Perform a case inversion on the string "{w}".',
     ],
 }
 
@@ -527,6 +688,11 @@ BINARY_TEMPLATES = {
         lambda b: f"If {b} is a binary number, what is it in decimal?",
         lambda b: f"Decode the binary number {b} into its decimal form.",
         lambda b: f"What base-10 number is represented by {b} in binary?",
+        lambda b: f"Turn the binary number {b} into a decimal number.",
+        lambda b: f"Give me the base-10 value of binary {b}.",
+        lambda b: f"Calculate the decimal representation of {b} (binary).",
+        lambda b: f"How much is binary {b} in base 10?",
+        lambda b: f"Interpret {b} as a binary number and convert to decimal.",
     ],
     "decimal_to_binary": [
         lambda n: f"Convert the decimal number {n} to binary.",
@@ -541,6 +707,11 @@ BINARY_TEMPLATES = {
         lambda n: f"Find the binary equivalent of the decimal number {n}.",
         lambda n: f"If you convert {n} to binary, what do you get?",
         lambda n: f"Represent {n} as a binary number.",
+        lambda n: f"Turn {n} into binary.",
+        lambda n: f"Give me {n} in base-2 notation.",
+        lambda n: f"How do you write {n} in binary form?",
+        lambda n: f"Determine the binary form of {n}.",
+        lambda n: f"Show {n} as a binary number.",
     ],
     "digit_sum": [
         lambda n: f"What is the sum of all digits in {n}?",
@@ -555,6 +726,11 @@ BINARY_TEMPLATES = {
         lambda n: f"For the number {n}, add its digits together.",
         lambda n: f"What is the total of all individual digits in {n}?",
         lambda n: f"Add together each digit that makes up {n}.",
+        lambda n: f"Total up the individual digits of {n}.",
+        lambda n: f"What is the sum when you add each digit of {n}?",
+        lambda n: f"Split {n} into digits and find their sum.",
+        lambda n: f"Compute the sum of all single digits in {n}.",
+        lambda n: f"Add every digit in the number {n} together.",
     ],
     "hex_to_decimal": [
         lambda h: f"Convert hexadecimal {h} to decimal.",
@@ -565,5 +741,10 @@ BINARY_TEMPLATES = {
         lambda h: f"Convert {h} from hex to decimal.",
         lambda h: f"Find the base-10 equivalent of hexadecimal {h}.",
         lambda h: f"If {h} is a hexadecimal number, what is its decimal value?",
+        lambda h: f"Turn hex {h} into a base-10 number.",
+        lambda h: f"Give me the decimal equivalent of hex {h}.",
+        lambda h: f"How much is hexadecimal {h} in decimal?",
+        lambda h: f"Calculate what hex {h} equals in base 10.",
+        lambda h: f"Interpret {h} as hexadecimal and convert to decimal.",
     ],
 }

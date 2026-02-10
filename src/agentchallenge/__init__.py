@@ -32,5 +32,10 @@ no scripts, no computational power, no external tools needed.
 from .challenge import AgentChallenge, Challenge, VerifyResult, GateResult
 from .types import CHALLENGE_TYPES
 
-__version__ = "0.6.0"
-__all__ = ["AgentChallenge", "Challenge", "VerifyResult", "GateResult", "CHALLENGE_TYPES"]
+from .safe_solve import validate_prompt, safe_solve, ISOLATION_PROMPT
+
+__version__ = "0.7.0"
+__all__ = [
+    "AgentChallenge", "Challenge", "VerifyResult", "GateResult",
+    "CHALLENGE_TYPES", "validate_prompt", "safe_solve", "ISOLATION_PROMPT",
+]

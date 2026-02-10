@@ -3,14 +3,7 @@
 import random
 import string
 from typing import Tuple
-from ..templates import reply_inst
-
-TEMPLATES = [
-    lambda desc: f"{desc} {reply_inst()}",
-    lambda desc: f"Using A=1, B=2, ... Z=26: {desc} {reply_inst()}",
-    lambda desc: f"Letter positions: A=1 through Z=26. {desc} {reply_inst()}",
-    lambda desc: f"Given that each letter has a numeric value (A=1, B=2, ... Z=26): {desc} {reply_inst()}",
-]
+from ..prompt_builder import build_prompt
 
 
 def _pos(letter):
@@ -68,6 +61,12 @@ class LetterMathChallenge:
             answer = str(product % mod)
             desc = f"Multiply the value of {l1} by {l2}, then find the remainder when divided by {mod}."
 
-        template = random.choice(TEMPLATES)
-        prompt = template(desc)
+        # Prepend letter-value context
+        prefix = random.choice([
+            "Using A=1, B=2, ... Z=26: ",
+            "Letter positions: A=1 through Z=26. ",
+            "Given that each letter has a numeric value (A=1, B=2, ... Z=26): ",
+            "With A=1, B=2, C=3, ..., Z=26: ",
+        ])
+        prompt = build_prompt(prefix + desc)
         return prompt, answer

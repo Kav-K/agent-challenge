@@ -3,7 +3,7 @@
 import random
 import string
 from typing import Tuple
-from ..templates import reply_inst
+from ..prompt_builder import build_prompt
 
 CONSONANTS = set("BCDFGHJKLMNPQRSTVWXYZbcdfghjklmnpqrstvwxyz")
 VOWELS = set("AEIOUaeiou")
@@ -87,16 +87,26 @@ CHAINS = [
 class ChainedTransformChallenge:
     @staticmethod
     def generate() -> Tuple[str, str]:
-        length = random.randint(7, 10)
-        # Mix of upper and lowercase for swap_case chains
-        word = ''.join(random.choice(string.ascii_letters) for _ in range(length))
+        # Retry up to 10 times to avoid empty results (e.g. ROT13 + remove consonants on all-consonant input)
+        for _ in range(10):
+            length = random.randint(7, 10)
+            # Mix of upper and lowercase for swap_case chains
+            word = ''.join(random.choice(string.ascii_letters) for _ in range(length))
 
-        chain = random.choice(CHAINS)
-        desc = chain["desc"](word)
-        prompt = desc + " " + reply_inst()
+            chain = random.choice(CHAINS)
 
-        result = word
-        for op in chain["ops"]:
-            result = op(result)
+            result = word
+            for op in chain["ops"]:
+                result = op(result)
 
+            if result:  # Non-empty result found
+                desc = chain["desc"](word)
+                prompt = build_prompt(desc)
+                return prompt, result.lower()
+
+        # Fallback: simple reverse + ROT13 (always produces non-empty)
+        word = ''.join(random.choice(string.ascii_letters) for _ in range(8))
+        result = _rot13(word[::-1])
+        desc = f'Take the string "{word}", reverse it, then apply ROT13 to the result.'
+        prompt = build_prompt(desc)
         return prompt, result.lower()
