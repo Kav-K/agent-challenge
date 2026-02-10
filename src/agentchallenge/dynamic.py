@@ -76,50 +76,56 @@ PROVIDERS = {
 # 7. Aggressive answer normalization for comparison
 # 8. Explicit "ANSWER:" prefix extraction from verifier
 
-GENERATE_PROMPT = """You are a challenge generator for AI agent authentication. Generate ONE unique AGENTIC-LEVEL challenge — it must require MULTIPLE reasoning steps that chain together.
+GENERATE_PROMPT = """You are a challenge generator for AI agent authentication. Generate ONE unique multi-step reasoning challenge.
 
 RULES (strict):
-1. The answer MUST be a single number OR a short string (1-20 chars). Never a sentence.
-2. The challenge MUST have exactly ONE objectively correct answer — no ambiguity.
-3. The challenge MUST require 2-4 chained steps (not just one operation).
-4. The challenge MUST be solvable by pure reasoning — no trivia, pop culture, or world knowledge.
-5. Include "Reply with ONLY the answer, nothing else." at the end of the prompt.
-6. SHOW YOUR WORK: Before writing the JSON, solve the challenge yourself step by step to verify the answer is correct. Write your work FIRST, then the JSON on the last line.
+1. The answer MUST be a single number (integer). Never a sentence, never a string.
+2. The challenge MUST have exactly ONE correct answer — no ambiguity.
+3. The challenge MUST require 2-4 chained mathematical or logical steps.
+4. The challenge MUST be solvable by pure arithmetic/logic — no trivia or world knowledge.
+5. End the prompt with "Reply with ONLY the answer, nothing else."
+6. SHOW YOUR WORK: Solve it yourself step by step FIRST, then write the JSON.
 
-REQUIRED: Multi-step challenges (pick one approach randomly):
-- Chained transforms: reverse a string, then remove vowels, then take first 3 chars
-- Base conversion chain: convert binary to decimal, add N, convert back
-- Multi-step math: compute X, then take remainder mod Y, then multiply by Z
-- Letter arithmetic: sum letter values (A=1..Z=26), then apply an operation
-- String extraction + transform: take first letter of each word, then reverse, then ROT13
-- Nested operations: ((X + Y) × Z) - W where X/Y/Z/W come from string properties
-- Interleave + transform: interleave two strings char by char, then reverse
+CHALLENGE TYPES (pick one randomly each time):
+- Nested arithmetic: ((A + B) × C) - D, then modulo E
+- Base conversion chain: binary→decimal, apply arithmetic, modulo
+- Sequence reasoning: given an explicit pattern, compute the Nth term
+- Property chains: "Word X has N letters (TELL them N), multiply by M, subtract K"
+- Modular arithmetic: compute expression, find remainder
+- Digit operations: sum of digits of a number, or digital root
+- Multi-step arithmetic: chain 3-4 operations (add, subtract, multiply, modulo)
 
-FORBIDDEN (never generate):
-- Single-step challenges (must be 2+ steps)
-- Riddles, lateral thinking, "trick questions"
-- Challenges with multiple valid answers
-- Trivia or world knowledge
-- Full-sentence answers
-- Time/date/clock puzzles
+FORBIDDEN:
+- Character-by-character string manipulation (reversing strings, removing vowels, ROT13, Caesar cipher)
+- Counting individual letters or characters in strings/phrases (NEVER ask "how many letters" or "count the letters")
+- Asking the solver to determine the length of any word (always TELL them the length instead)
+- Challenges requiring letter-level operations
+- Single-step problems (must chain 2+ operations)
+- Ambiguous geometric terms ("sides of a cube" — faces? edges?)
+- Ambiguous answers or multiple valid solutions
+- World knowledge or trivia questions
+- Factorials above 6! (LLMs miscompute large factorials)
+- Percentage/discount problems that produce non-integer answers (e.g. $55.08)
+- The answer MUST be an exact integer, never a decimal
+- Asking the solver to "count digits" in a binary or decimal number (models miscount)
+- Any task where the solver must count individual characters, letters, or digits
 
-EXAMPLES (DO NOT reuse — generate something novel):
-Working: "HELLO"→reversed→"OLLEH"→remove vowels→"LLH"
-{"prompt": "Reverse the string \"HELLO\", then remove all vowels from the result. Reply with ONLY the answer, nothing else.", "answer": "LLH"}
+EXAMPLES (DO NOT reuse — generate novel challenges with different numbers):
+Working: (17 × 4) = 68, 68 + 23 = 91, 91 mod 13 = 0
+{"prompt": "Compute 17 × 4, add 23, then find the remainder when divided by 13. Reply with ONLY the answer, nothing else.", "answer": "0"}
 
-Working: binary 1010=10, 10+7=17, 17 in binary=10001
-{"prompt": "Convert binary 1010 to decimal, add 7 to it, then convert the result back to binary. Reply with ONLY the answer, nothing else.", "answer": "10001"}
+Working: binary 110110 = 54, 54 - 19 = 35, 35 mod 8 = 3
+{"prompt": "Convert binary 110110 to decimal, subtract 19, then find the remainder when divided by 8. Reply with ONLY the answer, nothing else.", "answer": "3"}
 
-Working: "Cat Dog Elk"→first letters→"CDE"→reversed→"EDC"→ROT13→each letter +13: E(4+13=17)=R, D(3+13=16)=Q, C(2+13=15)=P → "RQP"
-{"prompt": "Take the first letter of each word in \"Cat Dog Elk\", reverse the result, then apply ROT13. Reply with ONLY the answer, nothing else.", "answer": "RQP"}
+Working: 5! = 120, 1+2+0=3, 3^2 = 9, 9-2 = 7
+{"prompt": "Compute 5 factorial, find the sum of its digits, square that sum, and subtract 2. Reply with ONLY the answer, nothing else.", "answer": "7"}
 
-Working: ((8+5)×3)-12 = (13×3)-12 = 39-12 = 27, 27 mod 7 = 6
-{"prompt": "Compute ((8 + 5) × 3) - 12, then find the remainder when divided by 7. Reply with ONLY the answer, nothing else.", "answer": "6"}
+Working: 3! = 6, 6 × 7 = 42, sum of digits of 42 = 4+2 = 6
+{"prompt": "Compute 3 factorial, multiply by 7, then find the sum of the digits of the result. Reply with ONLY the answer, nothing else.", "answer": "6"}
 
-Working: "SPARK"→reversed→"KRAPS"→remove vowels (A)→"KRPS"
-{"prompt": "Reverse the string \"SPARK\", then remove all vowels from the result. Reply with ONLY the answer, nothing else.", "answer": "KRPS"}
+IMPORTANT: Each challenge you generate MUST use a DIFFERENT structure than the examples above. Do NOT just change the numbers in a "compute X, add Y, modulo Z" template. Use genuinely different reasoning steps each time — mix base conversions, digit sums, factorials, word counting, sequence patterns, combinatorics, or property chains. Be creative.
 
-Now generate a NOVEL challenge — different from the examples above. Be creative with the specific values and words you choose. Show your work first, then the JSON on the final line:"""
+Now generate ONE novel challenge. Different numbers, different structure. Show work first, JSON last:"""
 
 
 VERIFY_PROMPT = """Solve this challenge step by step. Show your work, then write your final answer on the LAST line prefixed with "ANSWER: ".
