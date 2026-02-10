@@ -7,7 +7,7 @@ from agentchallenge import AgentChallenge
 from agentchallenge.types import CHALLENGE_TYPES, DIFFICULTY_MAP
 
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
-ATTEMPTS = 10
+ATTEMPTS = 5
 MODEL = "gpt-5.2"
 ALL_TYPES = sorted(CHALLENGE_TYPES.keys())
 
@@ -18,7 +18,7 @@ def call_openai(model, prompt):
             {"role": "system", "content": "You are solving a challenge. Reply with ONLY the answer, nothing else. No explanation, no quotes, no formatting."},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0, "max_tokens": 200,
+        "temperature": 0, "max_completion_tokens": 200,
     })
     try:
         r = subprocess.run(
@@ -46,7 +46,7 @@ for ctype in ALL_TYPES:
         result = ac.verify(ch.token, answer)
         if result.valid:
             correct += 1
-        time.sleep(0.2)
+        time.sleep(0.1)
 
     pct = correct / ATTEMPTS * 100
     bar = "█" * int(pct / 5) + "░" * (20 - int(pct / 5))

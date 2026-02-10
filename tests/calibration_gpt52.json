@@ -1,0 +1,127 @@
+{
+  "ascii_value": {
+    "correct": 4,
+    "total": 5,
+    "pct": 80.0
+  },
+  "base_conversion_chain": {
+    "correct": 5,
+    "total": 5,
+    "pct": 100.0
+  },
+  "binary": {
+    "correct": 5,
+    "total": 5,
+    "pct": 100.0
+  },
+  "caesar": {
+    "correct": 1,
+    "total": 5,
+    "pct": 20.0
+  },
+  "chained_transform": {
+    "correct": 1,
+    "total": 5,
+    "pct": 20.0
+  },
+  "counting": {
+    "correct": 4,
+    "total": 5,
+    "pct": 80.0
+  },
+  "extract_letters": {
+    "correct": 1,
+    "total": 5,
+    "pct": 20.0
+  },
+  "first_last": {
+    "correct": 4,
+    "total": 5,
+    "pct": 80.0
+  },
+  "letter_math": {
+    "correct": 3,
+    "total": 5,
+    "pct": 60.0
+  },
+  "letter_position": {
+    "correct": 0,
+    "total": 5,
+    "pct": 0.0
+  },
+  "multi_step_math": {
+    "correct": 2,
+    "total": 5,
+    "pct": 40.0
+  },
+  "nested_operations": {
+    "correct": 5,
+    "total": 5,
+    "pct": 100.0
+  },
+  "pattern": {
+    "correct": 5,
+    "total": 5,
+    "pct": 100.0
+  },
+  "reverse_string": {
+    "correct": 3,
+    "total": 5,
+    "pct": 60.0
+  },
+  "rot13": {
+    "correct": 4,
+    "total": 5,
+    "pct": 80.0
+  },
+  "simple_math": {
+    "correct": 5,
+    "total": 5,
+    "pct": 100.0
+  },
+  "sorting": {
+    "correct": 5,
+    "total": 5,
+    "pct": 100.0
+  },
+  "string_interleave": {
+    "correct": 0,
+    "total": 5,
+    "pct": 0.0
+  },
+  "string_length": {
+    "correct": 5,
+    "total": 5,
+    "pct": 100.0
+  },
+  "string_math": {
+    "correct": 5,
+    "total": 5,
+    "pct": 100.0
+  },
+  "substring": {
+    "correct": 5,
+    "total": 5,
+    "pct": 100.0
+  },
+  "transform": {
+    "correct": 3,
+    "total": 5,
+    "pct": 60.0
+  },
+  "word_extraction_chain": {
+    "correct": 1,
+    "total": 5,
+    "pct": 20.0
+  },
+  "word_math": {
+    "correct": 5,
+    "total": 5,
+    "pct": 100.0
+  },
+  "zigzag": {
+    "correct": 0,
+    "total": 5,
+    "pct": 0.0
+  }
+}
