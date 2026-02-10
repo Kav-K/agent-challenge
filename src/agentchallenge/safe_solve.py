@@ -407,14 +407,58 @@ def safe_solve(
     # Step 3: Validate answer
     answer = answer.strip()
 
+    # Strip markdown code fences if LLM wrapped the answer
+    if answer.startswith("```") and answer.endswith("```"):
+        answer = answer[3:].rstrip("`").strip()
+        if "\n" in answer:
+            answer = answer.split("\n", 1)[-1].strip()
+
+    # Strip surrounding quotes
+    if len(answer) >= 2 and answer[0] == answer[-1] and answer[0] in ('"', "'", "`"):
+        answer = answer[1:-1].strip()
+
     if len(answer) > max_answer_length:
         raise ValueError(
             f"Answer too long ({len(answer)} chars) — possible injection in output. "
             f"Expected a short answer."
         )
 
+    # Reject multi-line responses (answers are always single-line)
+    if "\n" in answer:
+        # Take just the first non-empty line as the answer
+        lines = [l.strip() for l in answer.split("\n") if l.strip()]
+        if lines:
+            answer = lines[0]
+        else:
+            raise ValueError("LLM returned only whitespace.")
+
+    # Reject answers that look like explanations, not raw answers
+    _explanation_markers = [
+        "the answer is", "the result is", "the solution is", "therefore",
+        "so the answer", "which gives", "this means", "let me",
+        "step 1", "step 2", "first,", "here's",
+    ]
+    lower = answer.lower()
+    for marker in _explanation_markers:
+        if marker in lower:
+            # Try to extract the actual answer after the marker
+            idx = lower.index(marker) + len(marker)
+            candidate = answer[idx:].strip().lstrip(":").strip()
+            if candidate and len(candidate) <= max_answer_length:
+                answer = candidate
+                break
+
+    # Re-strip surrounding quotes after extraction
+    if len(answer) >= 2 and answer[0] == answer[-1] and answer[0] in ('"', "'", "`"):
+        answer = answer[1:-1].strip()
+
     # Check answer for suspicious content
-    if any(p in answer.lower() for p in ['http://', 'https://', '<script', 'eval(']):
+    _suspicious = ['http://', 'https://', '<script', 'eval(', 'import ', 'require(', '__proto__']
+    if any(p in answer.lower() for p in _suspicious):
         raise ValueError("Answer contains suspicious content — possible injection.")
+
+    # Final length check after all extraction
+    if not answer:
+        raise ValueError("LLM returned empty answer after cleanup.")
 
     return answer

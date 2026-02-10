@@ -2103,18 +2103,55 @@ async function safeSolve(prompt, llmFn, opts = {}) {
     if (!result.safe) throw new Error(`Prompt rejected (${result.method}): ${result.reason} (score: ${result.score})`);
   }
 
-  const answer = await llmFn(ISOLATION_PROMPT, prompt);
-  if (!answer || typeof answer !== 'string') throw new Error('LLM returned empty or invalid response');
+  let raw = await llmFn(ISOLATION_PROMPT, prompt);
+  if (!raw || typeof raw !== 'string') throw new Error('LLM returned empty or invalid response');
 
-  const trimmed = answer.trim();
-  if (trimmed.length > maxAnswerLength) {
-    throw new Error(`Answer too long (${trimmed.length} chars) — possible injection in output`);
+  let answer = raw.trim();
+
+  // Strip markdown code fences
+  if (answer.startsWith('```') && answer.endsWith('```')) {
+    answer = answer.slice(3).replace(/`+$/, '').trim();
+    if (answer.includes('\n')) answer = answer.split('\n').pop().trim();
   }
-  if (/https?:\/\/|<script|eval\(/.test(trimmed.toLowerCase())) {
+  // Strip surrounding quotes
+  if (answer.length >= 2 && answer[0] === answer[answer.length - 1] && '"\'`'.includes(answer[0])) {
+    answer = answer.slice(1, -1).trim();
+  }
+
+  if (answer.length > maxAnswerLength) {
+    throw new Error(`Answer too long (${answer.length} chars) — possible injection in output`);
+  }
+
+  // Take first non-empty line if multi-line
+  if (answer.includes('\n')) {
+    const lines = answer.split('\n').map(l => l.trim()).filter(Boolean);
+    answer = lines.length ? lines[0] : '';
+  }
+
+  // Strip explanation markers and extract raw answer
+  const markers = ['the answer is', 'the result is', 'the solution is', 'therefore',
+    'so the answer', 'which gives', 'this means', 'let me', 'step 1', 'step 2', 'first,', "here's"];
+  const lower = answer.toLowerCase();
+  for (const marker of markers) {
+    const idx = lower.indexOf(marker);
+    if (idx !== -1) {
+      const candidate = answer.slice(idx + marker.length).trim().replace(/^:/, '').trim();
+      if (candidate && candidate.length <= maxAnswerLength) { answer = candidate; break; }
+    }
+  }
+
+  // Re-strip quotes after extraction
+  if (answer.length >= 2 && answer[0] === answer[answer.length - 1] && '"\'`'.includes(answer[0])) {
+    answer = answer.slice(1, -1).trim();
+  }
+
+  // Suspicious content check
+  if (/https?:\/\/|<script|eval\(|import |require\(|__proto__/i.test(answer)) {
     throw new Error('Answer contains suspicious content — possible injection');
   }
 
-  return trimmed;
+  if (!answer) throw new Error('LLM returned empty answer after cleanup');
+  return answer;
 }
 
 export { CHALLENGE_TYPES, DIFFICULTY_MAP, _callLLM, validatePrompt, validatePromptSync, safeSolve, ISOLATION_PROMPT };
