@@ -1139,7 +1139,8 @@ def _():
 
 @test("validate_prompt: exactly 500 chars passes")
 def _():
-    ok_prompt = "What is 2 + 2" + " " * (500 - 14)  # Pad to exactly 500
+    # Use a single long "word" to avoid triggering word count check
+    ok_prompt = "A" * 500
     assert len(ok_prompt) == 500
     r = validate_prompt(ok_prompt)
     assert r["safe"] is True
