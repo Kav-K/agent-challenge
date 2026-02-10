@@ -39,15 +39,11 @@ import { AgentChallenge } from 'agent-challenge';
 
 const ac = new AgentChallenge({ secret: 'your-secret-key-min-8-chars' });
 
-// Drop this into any existing route
+// Drop this into any existing route — one line handles everything
 app.post('/api/your-endpoint', (req, res) => {
-  const gate = ac.gateSync({
-    token: req.headers.authorization?.slice(7),
-    challengeToken: req.body?.challenge_token,
-    answer: req.body?.answer,
-  });
-  if (gate.status !== 'authenticated')
-    return res.status(401).json(gate);
+  const result = ac.gateHttp(req.headers, req.body);
+  if (result.status !== 'authenticated')
+    return res.status(401).json(result);
 
   // Your existing logic — unchanged
   res.json({ data: 'protected stuff' });

@@ -772,6 +772,191 @@ else:
     print(f"\n⏭️  Skipping live dynamic tests (OPENAI_API_KEY not set)")
 
 
+# ── Additional Security/QA Tests (requested) ──────────
+print("\n── Additional Security/QA Tests ───────────────────")
+
+def _mask_prompt(p: str) -> str:
+    """Mask variable parts so we can compare template/phrasing, not random values."""
+    p = re.sub(r'"[^"]*"', '"..."', p)
+    p = re.sub(r"'[^']*'", "'...'", p)
+    p = re.sub(r"\b\d+\b", "#", p)
+    p = re.sub(r"\b[A-Z]{3,}\b", "WORD", p)
+    p = re.sub(r"\s+", " ", p).strip().lower()
+    return p
+
+
+@test("TTL enforcement: ttl=2 expires after 3s")
+def _():
+    ac = AgentChallenge(secret="ttl-enforce-123", ttl=2)
+    ch = ac.create(challenge_type="simple_math")
+    assert ac.verify(token=ch.token, answer="wrong").error == "Incorrect answer"
+    time.sleep(3.0)
+    result = ac.verify(token=ch.token, answer="anything")
+    assert not result.valid
+    assert result.error == "Challenge expired"
+
+
+@test("Lock mode: persistent=False (hard, ttl=10) issues no token")
+def _():
+    ac = AgentChallenge(secret="lock-mode-12345", persistent=False, difficulty="hard", ttl=10)
+    ctype, prompt, answer = generate_challenge(difficulty="hard")
+    ch = ac._build_challenge(ctype, prompt, answer)
+    r = ac.gate(challenge_token=ch.token, answer=answer)
+    assert r.status == "authenticated"
+    assert r.token is None, "Lock mode should not issue persistent tokens"
+
+
+@test("Gate mode: persistent=True issues token and token is reusable")
+def _():
+    ac = AgentChallenge(secret="gate-mode-12345", persistent=True, difficulty="easy", ttl=10)
+    ctype, prompt, answer = generate_challenge(difficulty="easy")
+    ch = ac._build_challenge(ctype, prompt, answer)
+    r1 = ac.gate(challenge_token=ch.token, answer=answer)
+    assert r1.status == "authenticated"
+    assert r1.token is not None
+    r2 = ac.gate(token=r1.token)
+    assert r2.status == "authenticated"
+
+
+@test("Template randomization: 20 challenges of same type have different prompt templates")
+def _():
+    ac = AgentChallenge(secret="template-rand-12345")
+    for ctype in CHALLENGE_TYPES:
+        masked = set()
+        for _ in range(20):
+            ch = ac.create(challenge_type=ctype)
+            masked.add(_mask_prompt(ch.prompt))
+        assert len(masked) >= 2, f"{ctype}: expected >=2 prompt template variants, got {len(masked)}"
+
+
+@test("Answer normalization: comma canonicalization + trailing punctuation + case insensitivity")
+def _():
+    ac = AgentChallenge(secret="norm-12345", ttl=30)
+    # Craft a known answer with commas and spaces; store its hash exactly as the library does.
+    ctype = "sorting"
+    prompt = "Sort these numbers from smallest to largest: 1, 2, 3. Reply with ONLY the answer."
+    answer = "1, 2, 3"
+    ch = ac._build_challenge(ctype, prompt, answer)
+
+    # Comma spacing variants should normalize to "1, 2, 3"
+    assert ac.verify(token=ch.token, answer="1,2,3").valid
+    assert ac.verify(token=ch.token, answer="  1 , 2,3  ").valid
+
+    # Trailing punctuation (implemented: . and !) should be stripped
+    assert ac.verify(token=ch.token, answer="1,2,3.").valid
+    assert ac.verify(token=ch.token, answer="1, 2, 3!!").valid
+
+    # Case-insensitive (relevant for word answers)
+    ch2 = ac._build_challenge("reverse_string", "Return HELLO. Reply with ONLY the answer.", "hello")
+    assert ac.verify(token=ch2.token, answer="HeLlO").valid
+
+
+@test("Edge cases: invalid types raise; empty types list falls back to difficulty pool")
+def _():
+    ac_bad = AgentChallenge(secret="types-bad-12345", types=["not_a_real_type"])
+    try:
+        ac_bad.create()
+        assert False, "Expected ValueError for invalid types list"
+    except ValueError:
+        pass
+
+    ac_empty = AgentChallenge(secret="types-empty-12345", types=[])
+    ch = ac_empty.create()
+    assert ch.challenge_type in CHALLENGE_TYPES
+
+
+@test("Token tampering: modified persistent token fails verification")
+def _():
+    ac = AgentChallenge(secret="tamper-12345", persistent=True)
+    tok = ac.create_token(agent_id="agent-1")
+    tampered = tok[:-1] + ("a" if tok[-1] != "a" else "b")
+    assert ac.verify_token(tok) is True
+    assert ac.verify_token(tampered) is False
+    r = ac.gate(token=tampered)
+    assert r.status == "error"
+
+
+@test("Cross-secret tokens: persistent token from secret A fails under secret B")
+def _():
+    ac1 = AgentChallenge(secret="secret-A-12345")
+    ac2 = AgentChallenge(secret="secret-B-12345")
+    tok = ac1.create_token(agent_id="agent-1")
+    assert ac1.verify_token(tok) is True
+    assert ac2.verify_token(tok) is False
+
+
+# ── gate_http Tests ────────────────────────────────────
+print("\n  gate_http:")
+
+
+class FakeHeaders:
+    """Minimal dict-like for simulating HTTP headers."""
+    def __init__(self, d):
+        self._d = d
+    def get(self, k, default=""):
+        return self._d.get(k, default)
+
+
+@test("gate_http: no auth returns challenge_required")
+def _():
+    ac = AgentChallenge(secret="gate-http-test-123", ttl=30, types=["reverse_string"])
+    result = ac.gate_http(FakeHeaders({}), {})
+    assert result.status == "challenge_required"
+    assert result.prompt
+
+
+@test("gate_http: solve challenge from body")
+def _():
+    ac = AgentChallenge(secret="gate-http-test-123", ttl=30, types=["reverse_string"])
+    r1 = ac.gate_http(FakeHeaders({}), {})
+    words = re.findall(r"\b[A-Z0-9]{3,}\b", r1.prompt)
+    skip = {"ONLY", "Read", "YOUR", "THE", "Output", "Reverse", "Starting", "Just", "Reply", "What"}
+    target = [w for w in words if w not in skip][-1]
+    answer = target[::-1]
+    r2 = ac.gate_http(FakeHeaders({}), {"challenge_token": r1.challenge_token, "answer": answer})
+    assert r2.status == "authenticated"
+    assert r2.token  # persistent=True by default
+
+
+@test("gate_http: Bearer token from Authorization header")
+def _():
+    ac = AgentChallenge(secret="gate-http-test-123", ttl=30, types=["reverse_string"])
+    token = ac.create_token()
+    r = ac.gate_http(FakeHeaders({"Authorization": f"Bearer {token}"}), {})
+    assert r.status == "authenticated"
+
+
+@test("gate_http: lowercase authorization header works")
+def _():
+    ac = AgentChallenge(secret="gate-http-test-123", ttl=30)
+    token = ac.create_token()
+    r = ac.gate_http(FakeHeaders({"authorization": f"Bearer {token}"}), {})
+    assert r.status == "authenticated"
+
+
+@test("gate_http: None body treated as empty")
+def _():
+    ac = AgentChallenge(secret="gate-http-test-123", ttl=30)
+    r = ac.gate_http(FakeHeaders({}), None)
+    assert r.status == "challenge_required"
+
+
+@test("gate_http: non-dict body treated as empty")
+def _():
+    ac = AgentChallenge(secret="gate-http-test-123", ttl=30)
+    r = ac.gate_http(FakeHeaders({}), "not a dict")
+    assert r.status == "challenge_required"
+
+
+@test("gate_http: persistent=False works")
+def _():
+    ac = AgentChallenge(secret="gate-http-test-123", ttl=30, persistent=False)
+    token = ac.create_token()
+    r = ac.gate_http(FakeHeaders({"Authorization": f"Bearer {token}"}), {})
+    assert r.status == "error"
+    assert "disabled" in r.error.lower()
+
+
 # ── Summary ───────────────────────────────────────────
 print(f"\n{'='*50}")
 print(f"  ✅ Passed: {passed}")

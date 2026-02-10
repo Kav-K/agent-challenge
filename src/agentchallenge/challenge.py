@@ -378,6 +378,48 @@ class AgentChallenge:
             instructions=instructions,
         )
 
+    def gate_http(self, headers, body=None) -> GateResult:
+        """
+        Like gate(), but extracts token/challenge_token/answer from raw HTTP.
+
+        Pulls the Bearer token from the Authorization header and
+        challenge_token + answer from the parsed request body.
+        Works with any framework — just pass headers and body.
+
+        Usage:
+            # Flask
+            result = ac.gate_http(request.headers, request.get_json(silent=True))
+
+            # Django
+            import json
+            result = ac.gate_http(request.headers, json.loads(request.body))
+
+            # FastAPI
+            result = ac.gate_http(request.headers, await request.json())
+
+        Args:
+            headers: Dict-like object (or any mapping with .get()).
+                     Reads 'Authorization' for Bearer token.
+            body: Parsed JSON body (dict or None).
+                  Reads 'challenge_token' and 'answer'.
+
+        Returns:
+            GateResult — same as gate().
+        """
+        # Extract Bearer token from Authorization header
+        token = None
+        auth = (headers.get("Authorization") or headers.get("authorization") or "")
+        if auth.lower().startswith("bearer "):
+            token = auth[7:].strip() or None
+
+        # Extract challenge fields from body
+        if body is None:
+            body = {}
+        challenge_token = body.get("challenge_token") if isinstance(body, dict) else None
+        answer = body.get("answer") if isinstance(body, dict) else None
+
+        return self.gate(token=token, challenge_token=challenge_token, answer=answer)
+
     # ── Persistent Tokens ─────────────────────────────
 
     def create_token(self, agent_id: Optional[str] = None) -> str:

@@ -768,6 +768,36 @@ export class AgentChallenge {
     };
   }
 
+  /**
+   * Like gateSync(), but extracts token/challengeToken/answer from HTTP request parts.
+   * Works with Express, Koa, Fastify, or any framework that gives you headers + body.
+   *
+   * @param {object} headers - Request headers object (reads 'authorization')
+   * @param {object} [body] - Parsed JSON body (reads 'challenge_token' and 'answer')
+   * @returns {object} Gate result — same shape as gateSync()
+   *
+   * @example
+   * // Express
+   * app.post('/api/secure', (req, res) => {
+   *   const result = ac.gateHttp(req.headers, req.body);
+   *   if (result.status !== 'authenticated') return res.status(401).json(result);
+   *   // your logic
+   * });
+   */
+  gateHttp(headers, body) {
+    let token = null;
+    const auth = headers?.authorization || headers?.Authorization || '';
+    if (auth.toLowerCase().startsWith('bearer ')) {
+      token = auth.slice(7).trim() || null;
+    }
+    const b = (body && typeof body === 'object') ? body : {};
+    return this.gateSync({
+      token,
+      challengeToken: b.challenge_token,
+      answer: b.answer,
+    });
+  }
+
   // ── Persistent Tokens ─────────────────────────────
 
   /**

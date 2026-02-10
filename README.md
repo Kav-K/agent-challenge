@@ -40,11 +40,7 @@ def screenshot():
 # After: agents solve a puzzle once, pass through forever
 @app.route("/api/screenshots", methods=["POST"])
 def screenshot():
-    result = ac.gate(
-        token=request.headers.get("Authorization", "").removeprefix("Bearer ") or None,
-        challenge_token=request.json.get("challenge_token"),
-        answer=request.json.get("answer"),
-    )
+    result = ac.gate_http(request.headers, request.get_json(silent=True))
     if result.status != "authenticated":
         return jsonify(result.to_dict()), 401
     return take_screenshot(request.json["url"])
@@ -153,6 +149,22 @@ result = ac.gate(challenge_token="eyJ...", answer="PYTHON")
 result = ac.gate(token="eyJpZCI6ImF0Xy...")
 # → GateResult(status="authenticated")
 ```
+
+### `gate_http()` / `gateHttp()` — Zero-Boilerplate HTTP
+
+Instead of manually extracting the Bearer token from headers and fields from the body, pass them directly:
+
+```python
+# Python — works with Flask, Django, FastAPI, or anything with headers + body
+result = ac.gate_http(request.headers, request.get_json(silent=True))
+```
+
+```javascript
+// JavaScript — works with Express, Koa, Fastify, or anything with headers + body
+const result = ac.gateHttp(req.headers, req.body);
+```
+
+It reads `Authorization: Bearer <token>` from headers and `challenge_token` / `answer` from the body automatically. Same result as `gate()`, less wiring.
 
 ## Challenge Types
 
