@@ -1387,13 +1387,93 @@ CHALLENGE_TYPES.power_mod = () => {
   return { prompt: buildPrompt(pick(templates)), answer: String(answer) };
 };
 
+// Knowledge + math: world-knowledge facts (values stated) + arithmetic + mod
+// GPT-5.2: 100% | GPT-4o: ~85-93% | Humans: need Google for fact verification
+CHALLENGE_TYPES.knowledge_math = () => {
+  const FACTS = [
+    ["The atomic number of oxygen is {v}", 8],
+    ["The atomic number of carbon is {v}", 6],
+    ["The atomic number of nitrogen is {v}", 7],
+    ["The atomic number of neon is {v}", 10],
+    ["The atomic number of sodium is {v}", 11],
+    ["The atomic number of iron is {v}", 26],
+    ["The atomic number of copper is {v}", 29],
+    ["The atomic number of gold is {v}", 79],
+    ["The atomic number of silver is {v}", 47],
+    ["There are {v} planets in our solar system", 8],
+    ["There are {v} continents on Earth", 7],
+    ["A hexagon has {v} sides", 6],
+    ["A pentagon has {v} sides", 5],
+    ["A standard guitar has {v} strings", 6],
+    ["A violin has {v} strings", 4],
+    ["The English alphabet has {v} letters", 26],
+    ["An adult human has {v} teeth", 32],
+    ["The US flag has {v} stripes", 13],
+    ["A spider has {v} legs", 8],
+    ["An insect has {v} legs", 6],
+    ["There are {v} Harry Potter books in the main series", 7],
+    ["Brazil has won {v} FIFA World Cups", 5],
+    ["The Olympic flag has {v} rings", 5],
+    ["A standard die has {v} total dots across all faces", 21],
+    ["There are {v} ounces in a pound", 16],
+    ["There are {v} inches in a foot", 12],
+    ["A byte has {v} bits", 8],
+    ["Beethoven composed {v} symphonies", 9],
+    ["A soccer team fields {v} players", 11],
+    ["A basketball team has {v} players on court", 5],
+    ["A golf course has {v} holes", 18],
+    ["A standard deck has {v} cards", 52],
+    ["A marathon is approximately {v} miles", 26],
+    ["A chess board has {v} squares", 64],
+    ["There are {v} hours in a day", 24],
+    ["A human cell has {v} chromosomes", 46],
+    ["A piano has {v} keys", 88],
+  ];
+  const [f1, f2] = pickN(FACTS, 2);
+  const [tmpl1, val1] = f1;
+  const [tmpl2, val2] = f2;
+  const sent1 = tmpl1.replace('{v}', val1);
+  const sent2 = tmpl2.replace('{v}', val2);
+  const m = randInt(3, 9);
+
+  const ops = [];
+  if (val1 + val2 < 200) ops.push('add');
+  if (val1 * val2 < 5000) ops.push('mul');
+  if (val1 !== val2) ops.push('sub');
+  const op = pick(ops);
+
+  let result, opText;
+  if (op === 'add') {
+    result = (val1 + val2) % m;
+    opText = pick(["Add these two numbers", "Sum these two numbers"]);
+  } else if (op === 'mul') {
+    result = (val1 * val2) % m;
+    opText = pick(["Multiply these two numbers", "Find the product of these two numbers"]);
+  } else {
+    result = ((val1 >= val2 ? val1 - val2 : val2 - val1) % m + m) % m;
+    opText = val1 >= val2 ? "Subtract the second from the first" : "Subtract the first from the second";
+  }
+  return { prompt: buildPrompt(`${sent1} and ${sent2}. ${opText}, then find the remainder when divided by ${m}.`), answer: String(result) };
+};
+
+// Helper: pick N unique items from array
+function pickN(arr, n) {
+  const copy = [...arr];
+  const result = [];
+  for (let i = 0; i < n; i++) {
+    const idx = Math.floor(Math.random() * copy.length);
+    result.push(copy.splice(idx, 1)[0]);
+  }
+  return result;
+}
+
 const DIFFICULTY_MAP = {
   // Easy: gpt-4o-mini solves 100% single-shot (empirically validated)
   easy: ['simple_math', 'string_math', 'binary', 'pattern'],
   // Medium: gpt-4o ~90%, gpt-4o-mini ~60%
   medium: ['sorting', 'word_math'],
-  // Hard: gpt-5.2 100%, gpt-4o ~70-80%
-  hard: ['nested_operations', 'base_conversion_chain', 'power_mod'],
+  // Hard: gpt-5.2 100%, gpt-4o ~70-85%
+  hard: ['nested_operations', 'base_conversion_chain', 'power_mod', 'knowledge_math'],
   // Agentic: multi-step chains, blocks both gpt-4o and gpt-4o-mini
   agentic: ['chained_arithmetic'],
 };

@@ -35,6 +35,7 @@ from .nested_operations import NestedOperationsChallenge
 from .string_interleave import StringInterleaveChallenge
 from .chained_arithmetic import ChainedArithmeticChallenge
 from .power_mod import PowerModChallenge
+from .knowledge_math import KnowledgeMathChallenge
 
 # Registry of all challenge types — 25 types, each with multiple random variants
 CHALLENGE_TYPES = {
@@ -65,6 +66,7 @@ CHALLENGE_TYPES = {
     "string_interleave": StringInterleaveChallenge,
     "chained_arithmetic": ChainedArithmeticChallenge,
     "power_mod": PowerModChallenge,
+    "knowledge_math": KnowledgeMathChallenge,
 }
 
 # Difficulty presets — empirically calibrated against gpt-5.2, gpt-4o, gpt-4o-mini
@@ -81,7 +83,7 @@ DIFFICULTY_MAP = {
     ],
     # Hard: GPT-5.2 100%, GPT-4o ~70-80%, GPT-4o-mini struggling
     "hard": [
-        "nested_operations", "base_conversion_chain", "power_mod",
+        "nested_operations", "base_conversion_chain", "power_mod", "knowledge_math",
     ],
     # Agentic: GPT-5.2 100%, GPT-4o ~30%, humans can't solve in <10s
     # Multi-step arithmetic chains requiring sequential computation

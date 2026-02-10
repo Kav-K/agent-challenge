@@ -1677,9 +1677,9 @@ def _():
 def _():
     assert len(DIFFICULTY_MAP["medium"]) == 2, f"Medium has {len(DIFFICULTY_MAP['medium'])} types, expected 2"
 
-@test("difficulty: hard tier has exactly 3 types")
+@test("difficulty: hard tier has exactly 4 types")
 def _():
-    assert len(DIFFICULTY_MAP["hard"]) == 3, f"Hard has {len(DIFFICULTY_MAP['hard'])} types, expected 3"
+    assert len(DIFFICULTY_MAP["hard"]) == 4, f"Hard has {len(DIFFICULTY_MAP['hard'])} types, expected 4"
 
 @test("difficulty: agentic tier has exactly 1 type")
 def _():
