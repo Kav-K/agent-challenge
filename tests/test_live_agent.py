@@ -247,7 +247,7 @@ def _():
 
 @test("HTTP: lock mode — no persistent token returned")
 def _():
-    srv = MockAPIServer("live-lock-mode-key4", persistent=False, difficulty="easy").start()
+    srv = MockAPIServer("live-lock-mode-key4", persistent=False, difficulty="easy", types=["simple_math", "pattern", "string_length", "first_last"]).start()
     try:
         for _ in range(3):
             code, data = api_call(srv.url)
