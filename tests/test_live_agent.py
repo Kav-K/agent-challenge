@@ -103,7 +103,7 @@ def call_openai(prompt, model="gpt-4o-mini", max_tokens=100):
             {"role": "user", "content": prompt},
         ],
         "temperature": 0, "max_tokens": max_tokens,
-    })
+    }, timeout=45)
     return data["choices"][0]["message"]["content"].strip()
 
 def llm_fn(system_prompt, user_prompt, model="gpt-4o-mini"):
@@ -318,26 +318,35 @@ for ctype in HARD_FOR_MINI:
 
 print(f"\n── Bulk accuracy (20 challenges each) ──────────")
 
+def _bulk_solve(ac, n=20):
+    solved = 0
+    for _ in range(n):
+        ch = ac.create()
+        try:
+            answer = call_openai(ch.prompt)
+            if ac.verify(token=ch.token, answer=answer).valid:
+                solved += 1
+        except Exception:
+            pass  # timeout or network error — count as fail
+    return solved
+
 @test("gpt-4o-mini: ≥50% on 20 easy challenges")
 def _():
-    ac = AgentChallenge(secret="live-bulk-easy-key-acc", difficulty="easy")
-    solved = sum(1 for _ in range(20) if (lambda c: ac.verify(token=c.token, answer=call_openai(c.prompt)).valid)(ac.create()))
+    solved = _bulk_solve(AgentChallenge(secret="live-bulk-easy-key-acc", difficulty="easy"))
     pct = solved / 20 * 100
     print(f"      → {solved}/20 ({pct:.0f}%)")
     assert solved >= 10, f"Only {solved}/20 ({pct:.0f}%)"
 
 @test("gpt-4o-mini: ≥40% on 20 medium challenges")
 def _():
-    ac = AgentChallenge(secret="live-bulk-med-key-acc", difficulty="medium")
-    solved = sum(1 for _ in range(20) if (lambda c: ac.verify(token=c.token, answer=call_openai(c.prompt)).valid)(ac.create()))
+    solved = _bulk_solve(AgentChallenge(secret="live-bulk-med-key-acc", difficulty="medium"))
     pct = solved / 20 * 100
     print(f"      → {solved}/20 ({pct:.0f}%)")
     assert solved >= 8, f"Only {solved}/20 ({pct:.0f}%)"
 
 @test("gpt-4o-mini: ≥25% on 20 hard challenges")
 def _():
-    ac = AgentChallenge(secret="live-bulk-hard-key-acc", difficulty="hard")
-    solved = sum(1 for _ in range(20) if (lambda c: ac.verify(token=c.token, answer=call_openai(c.prompt)).valid)(ac.create()))
+    solved = _bulk_solve(AgentChallenge(secret="live-bulk-hard-key-acc", difficulty="hard"))
     pct = solved / 20 * 100
     print(f"      → {solved}/20 ({pct:.0f}%)")
     assert solved >= 5, f"Only {solved}/20 ({pct:.0f}%)"
