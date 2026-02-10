@@ -63,40 +63,48 @@ CHALLENGE_TYPES = {
     "string_interleave": StringInterleaveChallenge,
 }
 
-# Difficulty presets
+# Difficulty presets — empirically calibrated against gpt-5.2, gpt-4o, gpt-4o-mini
+# Only types where GPT-5.2 achieves 100% are active in the tiers below.
 DIFFICULTY_MAP = {
-    # Easy: gpt-4o-mini solves 100% single-shot (empirically validated)
-    # simple_math 100%, first_last 100%, string_math 100%
+    # Easy: All models solve reliably
+    # gpt-5.2: 100% | gpt-4o: 100% | gpt-4o-mini: 80-100%
     "easy": [
-        "simple_math", "first_last", "string_math",
+        "simple_math", "string_math", "binary", "pattern",
     ],
-    # Medium: gpt-4o solves 100%, gpt-4o-mini starts failing (80-90%)
-    # binary 100%/80%, pattern 100%/80%, word_math 90%/70%,
-    # sorting 90%/50%, ascii_value 80%/90%
+    # Medium: GPT-5.2 100%, GPT-4o ~90%, GPT-4o-mini struggles
     "medium": [
-        "binary", "pattern", "word_math", "sorting", "ascii_value",
+        "sorting", "word_math",
     ],
-    # Hard: gpt-4o fails significantly (<70%), gpt-4o-mini near-zero
-    # counting 50%/50%, substring 60%/40%, string_length 50%/60%,
-    # reverse_string 80%/60%, transform 70%/50%,
-    # rot13 40%/20%, caesar 30%/0%, letter_position 20%/10%,
-    # extract_letters 10%/0%, zigzag 0%/0%
+    # Hard: GPT-5.2 100%, GPT-4o ~75%, GPT-4o-mini failing
     "hard": [
-        "counting", "substring", "string_length", "reverse_string",
-        "transform", "rot13", "caesar", "letter_position",
-        "extract_letters", "zigzag",
+        "nested_operations", "base_conversion_chain",
     ],
-    # Agentic: multi-step chains, blocks both gpt-4o and gpt-4o-mini
-    # chained_transform 20%/20%, multi_step_math 50%/40%,
-    # base_conversion_chain 80%/40%, word_extraction_chain 20%/0%,
-    # letter_math 70%/0%, nested_operations 70%/80%,
-    # string_interleave 30%/0%
+    # Agentic: GPT-5.2 100%, GPT-4o ~55%, GPT-4o-mini near-zero
     "agentic": [
-        "chained_transform", "multi_step_math", "base_conversion_chain",
-        "word_extraction_chain", "letter_math",
-        "nested_operations", "string_interleave",
+        "string_length", "substring",
     ],
 }
+
+# Shelved types — GPT-5.2 < 100%, kept for future use when models improve
+# These remain importable and in CHALLENGE_TYPES but are excluded from
+# difficulty-based random selection.
+SHELVED_TYPES = [
+    "first_last",            # gpt-5.2: 80%
+    "ascii_value",           # gpt-5.2: 80%
+    "counting",              # gpt-5.2: 80%
+    "rot13",                 # gpt-5.2: 80%
+    "reverse_string",        # gpt-5.2: 60%
+    "transform",             # gpt-5.2: 60%
+    "letter_math",           # gpt-5.2: 60%
+    "multi_step_math",       # gpt-5.2: 40%
+    "caesar",                # gpt-5.2: 20%
+    "chained_transform",     # gpt-5.2: 20%
+    "extract_letters",       # gpt-5.2: 20%
+    "word_extraction_chain", # gpt-5.2: 20%
+    "letter_position",       # gpt-5.2: 0%
+    "string_interleave",     # gpt-5.2: 0%
+    "zigzag",                # gpt-5.2: 0%
+]
 
 
 def generate_challenge(

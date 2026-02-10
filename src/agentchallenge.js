@@ -1363,13 +1363,13 @@ CHALLENGE_TYPES.string_interleave = () => {
 
 const DIFFICULTY_MAP = {
   // Easy: gpt-4o-mini solves 100% single-shot (empirically validated)
-  easy: ['simple_math', 'first_last', 'string_math'],
+  easy: ['simple_math', 'string_math', 'binary', 'pattern'],
   // Medium: gpt-4o solves 100%, gpt-4o-mini starts failing (80-90%)
-  medium: ['binary', 'pattern', 'word_math', 'sorting', 'ascii_value'],
+  medium: ['sorting', 'word_math'],
   // Hard: gpt-4o fails significantly (<70%), gpt-4o-mini near-zero
-  hard: ['counting', 'substring', 'string_length', 'reverse_string', 'transform', 'rot13', 'caesar', 'letter_position', 'extract_letters', 'zigzag'],
+  hard: ['nested_operations', 'base_conversion_chain'],
   // Agentic: multi-step chains, blocks both gpt-4o and gpt-4o-mini
-  agentic: ['chained_transform', 'multi_step_math', 'base_conversion_chain', 'word_extraction_chain', 'letter_math', 'nested_operations', 'string_interleave'],
+  agentic: ['string_length', 'substring'],
 };
 
 

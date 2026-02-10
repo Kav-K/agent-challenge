@@ -1669,21 +1669,21 @@ def _():
 # ── Difficulty Tier Completeness ──────────────────────
 print("\n── Difficulty Tier Completeness ────────────────")
 
-@test("difficulty: easy tier has exactly 3 types")
+@test("difficulty: easy tier has exactly 4 types")
 def _():
-    assert len(DIFFICULTY_MAP["easy"]) == 3, f"Easy has {len(DIFFICULTY_MAP['easy'])} types, expected 3"
+    assert len(DIFFICULTY_MAP["easy"]) == 4, f"Easy has {len(DIFFICULTY_MAP['easy'])} types, expected 4"
 
-@test("difficulty: medium tier has exactly 5 types")
+@test("difficulty: medium tier has exactly 2 types")
 def _():
-    assert len(DIFFICULTY_MAP["medium"]) == 5, f"Medium has {len(DIFFICULTY_MAP['medium'])} types, expected 5"
+    assert len(DIFFICULTY_MAP["medium"]) == 2, f"Medium has {len(DIFFICULTY_MAP['medium'])} types, expected 2"
 
-@test("difficulty: hard tier has exactly 10 types")
+@test("difficulty: hard tier has exactly 2 types")
 def _():
-    assert len(DIFFICULTY_MAP["hard"]) == 10, f"Hard has {len(DIFFICULTY_MAP['hard'])} types, expected 10"
+    assert len(DIFFICULTY_MAP["hard"]) == 2, f"Hard has {len(DIFFICULTY_MAP['hard'])} types, expected 2"
 
-@test("difficulty: agentic tier has exactly 7 types")
+@test("difficulty: agentic tier has exactly 2 types")
 def _():
-    assert len(DIFFICULTY_MAP["agentic"]) == 7, f"Agentic has {len(DIFFICULTY_MAP['agentic'])} types, expected 7"
+    assert len(DIFFICULTY_MAP["agentic"]) == 2, f"Agentic has {len(DIFFICULTY_MAP['agentic'])} types, expected 2"
 
 @test("difficulty: all types in DIFFICULTY_MAP exist in CHALLENGE_TYPES")
 def _():
@@ -1696,13 +1696,15 @@ def _():
     for tier, types in DIFFICULTY_MAP.items():
         assert len(types) == len(set(types)), f"Tier '{tier}' has duplicate types"
 
-@test("difficulty: every CHALLENGE_TYPES entry is in at least one tier")
+@test("difficulty: every active CHALLENGE_TYPES entry is in a tier or shelved")
 def _():
+    from agentchallenge.types import SHELVED_TYPES
     all_tiered = set()
     for types in DIFFICULTY_MAP.values():
         all_tiered.update(types)
+    all_accounted = all_tiered | set(SHELVED_TYPES)
     for t in CHALLENGE_TYPES:
-        assert t in all_tiered, f"Type '{t}' not in any difficulty tier"
+        assert t in all_accounted, f"Type '{t}' not in any tier or SHELVED_TYPES"
 
 
 # ── New Challenge Type Tests ──────────────────────────

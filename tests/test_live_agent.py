@@ -191,7 +191,7 @@ print(f"\n🤖 Live Agent Tests (OpenAI API via {transport})")
 print(f"   Key: ...{OPENAI_KEY[-6:]}")
 
 # Types gpt-4o-mini reliably solves — matches the "easy" tier exactly
-MINI_SAFE = ["simple_math", "first_last", "string_math"]
+MINI_SAFE = ["simple_math", "string_math", "binary"]
 
 
 # ── Section 1: Full HTTP Agent Flow ───────────────────
@@ -290,7 +290,7 @@ def _():
 print(f"\n── Easy tier: gpt-4o-mini MUST solve (3 attempts each) ──")
 
 # Easy types: gpt-4o-mini 100% in calibration
-EASY_TYPES = ["simple_math", "first_last", "string_math"]
+EASY_TYPES = ["simple_math", "string_math", "binary", "pattern"]
 for ctype in EASY_TYPES:
     @test(f"gpt-4o-mini solves {ctype} (easy — must pass)")
     def _(ct=ctype):
@@ -300,8 +300,8 @@ for ctype in EASY_TYPES:
 
 print(f"\n── Medium tier: gpt-4o MUST solve, gpt-4o-mini may fail ──")
 
-# Medium types: gpt-4o 90-100%, gpt-4o-mini 50-90%
-MEDIUM_TYPES = ["binary", "pattern", "word_math", "sorting", "ascii_value"]
+# Medium types: gpt-4o 90%, gpt-4o-mini ~60%
+MEDIUM_TYPES = ["sorting", "word_math"]
 for ctype in MEDIUM_TYPES:
     @test(f"gpt-4o solves {ctype} (medium — must pass)")
     def _(ct=ctype):
@@ -319,21 +319,19 @@ for ctype in MEDIUM_TYPES:
         else:
             print(f"      (expected — medium tier)")
 
-print(f"\n── Hard tier: even gpt-4o mostly fails ──")
+print(f"\n── Hard tier: gpt-4o ~75%, gpt-4o-mini struggles ──")
 
-# Hard types: gpt-4o <70%, gpt-4o-mini <50%
-HARD_TYPES = ["caesar", "rot13", "zigzag", "extract_letters", "letter_position",
-              "counting", "reverse_string", "transform", "substring", "string_length"]
+# Hard types: gpt-4o ~75%, gpt-4o-mini ~60%
+HARD_TYPES = ["nested_operations", "base_conversion_chain"]
 for ctype in HARD_TYPES:
-    @test(f"gpt-4o attempts {ctype} (hard — expected failure)")
+    @test(f"gpt-4o attempts {ctype} (hard)")
     def _(ct=ctype):
         ac = AgentChallenge(secret=f"live-hard-{ct}-key", types=[ct])
         ok, ch, ans = solve_with_retry(ac, "gpt-4o", max_attempts=2)
         if ok:
             print(f"      (solved: {ans})")
         else:
-            print(f"      (expected failure — hard tier)")
-        # Don't assert — hard is designed to block gpt-4o
+            print(f"      (failed — hard tier)")
 
 
 # ── Section 3: Bulk Accuracy ──────────────────────────
