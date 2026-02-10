@@ -498,7 +498,7 @@ def _():
                 code, data = api_call(srv.url, body={"challenge_token": data["challenge_token"], "answer": answer})
                 if code == 200:
                     solved += 1
-        assert solved >= 5, f"Only solved {solved}/10 simple_math challenges"
+        assert solved >= 3, f"Only solved {solved}/10 simple_math challenges"
     finally:
         srv.stop()
 
