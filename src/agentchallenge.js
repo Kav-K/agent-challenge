@@ -1368,26 +1368,35 @@ CHALLENGE_TYPES.chained_arithmetic = () => {
   if (pattern === "add_mul_sub_mod") {
     const a = randInt(2,9), b = randInt(2,9), c = randInt(2,5), d = randInt(1,9), m = randInt(3,7);
     return { prompt: buildPrompt(pick([
-      `Compute (${a} + ${b}), multiply by ${c}, subtract ${d}, then find the remainder when divided by ${m}.`,
-      `Add ${a} and ${b}. Multiply the result by ${c}. Subtract ${d}. What is the remainder when divided by ${m}?`,
+      `Add ${a} and ${b}. Multiply by ${c}. Subtract ${d}. Find the remainder when divided by ${m}.`,
+      `What is ((${a} + ${b}) × ${c} - ${d}) mod ${m}?`,
+      `Compute ${a} + ${b}, multiply the sum by ${c}, subtract ${d}, remainder mod ${m}.`,
+      `Sum ${a} and ${b}, then multiply by ${c}, then subtract ${d}. What is the remainder after dividing by ${m}?`,
+      `(${a} + ${b}) × ${c} − ${d}. Divide by ${m} and give the remainder.`,
     ])), answer: String(((a + b) * c - d) % m) };
   } else if (pattern === "mul_add_mul_mod") {
     const a = randInt(2,7), b = randInt(2,5), c = randInt(3,9), d = randInt(2,4), m = randInt(3,7);
     return { prompt: buildPrompt(pick([
       `Multiply ${a} by ${b}. Add ${c}. Multiply by ${d}. Find the remainder when divided by ${m}.`,
-      `Compute ${a} × ${b}, add ${c}, multiply that by ${d}, then take mod ${m}.`,
+      `What is ((${a} × ${b} + ${c}) × ${d}) mod ${m}?`,
+      `Compute ${a} × ${b}, add ${c}, multiply by ${d}, remainder mod ${m}.`,
+      `Product of ${a} and ${b}, plus ${c}, times ${d}. What is the remainder after dividing by ${m}?`,
     ])), answer: String(((a * b + c) * d) % m) };
   } else if (pattern === "add_square_sub_mod") {
     const a = randInt(2,5), b = randInt(1,4), c = randInt(1,8), m = randInt(3,7);
     return { prompt: buildPrompt(pick([
       `Add ${a} and ${b}. Square the result. Subtract ${c}. Find the remainder when divided by ${m}.`,
-      `Compute (${a} + ${b})², subtract ${c}, then find the remainder mod ${m}.`,
+      `What is ((${a} + ${b})² - ${c}) mod ${m}?`,
+      `Compute (${a} + ${b}) squared, subtract ${c}, remainder mod ${m}.`,
+      `Sum ${a} and ${b}, square it, subtract ${c}. Remainder after dividing by ${m}?`,
     ])), answer: String(((a + b) ** 2 - c) % m) };
-  } else if (pattern === "mul_sub_add_mod") {
+  } else { // mul_sub_add_mod
     const a = randInt(3,9), b = randInt(2,5), c = randInt(1, Math.min(a*b-1,9)), d = randInt(2,9), m = randInt(3,7);
     return { prompt: buildPrompt(pick([
       `Multiply ${a} by ${b}. Subtract ${c}. Add ${d}. Find the remainder when divided by ${m}.`,
-      `Compute ${a} × ${b} - ${c} + ${d}, then take mod ${m}.`,
+      `What is (${a} × ${b} - ${c} + ${d}) mod ${m}?`,
+      `Compute ${a} × ${b}, subtract ${c}, add ${d}, remainder mod ${m}.`,
+      `Product of ${a} and ${b}, minus ${c}, plus ${d}. Remainder after dividing by ${m}?`,
     ])), answer: String((a * b - c + d) % m) };
   }
 };
