@@ -381,13 +381,25 @@ def _():
         ctype, _, _ = generate_challenge(difficulty="easy")
         assert ctype in DIFFICULTY_MAP["easy"], f"{ctype} not in easy pool"
 
-@test("Hard covers all types (500 samples)")
+@test("Hard covers original 12 types (500 samples)")
 def _():
+    original_12 = {"reverse_string", "simple_math", "letter_position", "rot13", "pattern",
+                   "extract_letters", "word_math", "caesar", "sorting", "counting", "transform", "binary"}
     seen = set()
     for _ in range(500):
         ctype, _, _ = generate_challenge(difficulty="hard")
         seen.add(ctype)
-    assert seen == set(CHALLENGE_TYPES.keys()), f"Missing: {set(CHALLENGE_TYPES.keys()) - seen}"
+    assert seen == original_12, f"Missing: {original_12 - seen}, Extra: {seen - original_12}"
+
+@test("Agentic covers agentic types (200 samples)")
+def _():
+    agentic_types = {"chained_transform", "multi_step_math", "base_conversion_chain",
+                     "word_extraction_chain", "letter_math", "caesar"}
+    seen = set()
+    for _ in range(200):
+        ctype, _, _ = generate_challenge(difficulty="agentic")
+        seen.add(ctype)
+    assert seen == agentic_types, f"Missing: {agentic_types - seen}"
 
 
 # ── Performance ───────────────────────────────────────

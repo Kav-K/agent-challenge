@@ -737,10 +737,156 @@ const CHALLENGE_TYPES = {
   },
 };
 
+// ── Agentic-tier challenge types (multi-step, chain operations) ──
+
+// ROT13 helper
+function _rot13str(s) {
+  return s.replace(/[a-zA-Z]/g, c => {
+    const base = c <= 'Z' ? 65 : 97;
+    return String.fromCharCode((c.charCodeAt(0) - base + 13) % 26 + base);
+  });
+}
+
+const VOWELS_SET = new Set('AEIOUaeiou');
+const CONSONANTS_SET = new Set('BCDFGHJKLMNPQRSTVWXYZbcdfghjklmnpqrstvwxyz');
+
+const CHAINED_OPS = [
+  { desc: w => `Take the string "${w}", reverse it, then apply ROT13 to the result.`, ops: [s => [...s].reverse().join(''), _rot13str] },
+  { desc: w => `Apply ROT13 to "${w}", then reverse the result.`, ops: [_rot13str, s => [...s].reverse().join('')] },
+  { desc: w => `Reverse "${w}", then remove all vowels (A, E, I, O, U) from the result.`, ops: [s => [...s].reverse().join(''), s => [...s].filter(c => !VOWELS_SET.has(c)).join('')] },
+  { desc: w => `Take "${w}", extract every 2nd character (positions 1, 3, 5...), then reverse that.`, ops: [s => [...s].filter((_, i) => i % 2 === 0).join(''), s => [...s].reverse().join('')] },
+  { desc: w => `Remove all vowels from "${w}", then reverse what's left.`, ops: [s => [...s].filter(c => !VOWELS_SET.has(c)).join(''), s => [...s].reverse().join('')] },
+  { desc: w => `Take "${w}", swap uppercase and lowercase, then apply ROT13.`, ops: [s => [...s].map(c => c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase()).join(''), _rot13str] },
+  { desc: w => `Reverse "${w}", then extract every 2nd character (positions 1, 3, 5...).`, ops: [s => [...s].reverse().join(''), s => [...s].filter((_, i) => i % 2 === 0).join('')] },
+  { desc: w => `Apply ROT13 to "${w}", then remove all consonants, keeping only vowels.`, ops: [_rot13str, s => [...s].filter(c => !CONSONANTS_SET.has(c)).join('')] },
+  { desc: w => `Take "${w}", remove all vowels, then apply ROT13 to the remaining letters.`, ops: [s => [...s].filter(c => !VOWELS_SET.has(c)).join(''), _rot13str] },
+  { desc: w => `Reverse "${w}", swap the case of each letter, then extract every 2nd character.`, ops: [s => [...s].reverse().join(''), s => [...s].map(c => c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase()).join(''), s => [...s].filter((_, i) => i % 2 === 0).join('')] },
+];
+
+CHALLENGE_TYPES.chained_transform = () => {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const len = randInt(7, 10);
+  const word = Array.from({ length: len }, () => chars[randInt(0, chars.length - 1)]).join('');
+  const chain = pick(CHAINED_OPS);
+  let result = word;
+  for (const op of chain.ops) result = op(result);
+  return { prompt: chain.desc(word) + ' ' + ri(), answer: result.toLowerCase() };
+};
+
+CHALLENGE_TYPES.multi_step_math = () => {
+  const variant = pick(['mult_add', 'add_digitsum', 'mult_digitsum', 'div_mult', 'expr_mod', 'two_expr']);
+  const digitSum = n => [...String(Math.abs(n))].reduce((s, d) => s + Number(d), 0);
+  let desc, ans;
+  if (variant === 'mult_add') {
+    const a = randInt(11, 25), b = randInt(11, 25), c = randInt(10, 50);
+    ans = a * b + c; desc = `Calculate ${a} × ${b}, then add ${c} to the result.`;
+  } else if (variant === 'add_digitsum') {
+    const a = randInt(100, 500), b = randInt(100, 500);
+    ans = digitSum(a + b); desc = `Add ${a} and ${b}, then find the digit sum of the result.`;
+  } else if (variant === 'mult_digitsum') {
+    const a = randInt(12, 30), b = randInt(12, 30);
+    ans = digitSum(a * b); desc = `Multiply ${a} by ${b}, then find the digit sum of the result.`;
+  } else if (variant === 'div_mult') {
+    const div = randInt(3, 12), quot = randInt(5, 25), mult = randInt(2, 9);
+    ans = quot * mult; desc = `Divide ${div * quot} by ${div}, then multiply the result by ${mult}.`;
+  } else if (variant === 'expr_mod') {
+    const a = randInt(15, 50), b = randInt(10, 40), m = randInt(7, 13);
+    ans = (a + b) % m; desc = `Add ${a} and ${b}, then find the remainder when divided by ${m}.`;
+  } else {
+    const a = randInt(11, 30), b = randInt(11, 30), c = randInt(10, 50), d = randInt(10, 50);
+    ans = (a * b) + (c + d); desc = `Calculate (${a} × ${b}) + (${c} + ${d}).`;
+  }
+  const t = pick([d => d, d => `Solve this step by step: ${d}`, d => `Work through this: ${d}`, d => `Compute: ${d}`]);
+  return { prompt: t(desc) + ' ' + ri(), answer: String(ans) };
+};
+
+CHALLENGE_TYPES.base_conversion_chain = () => {
+  const variant = pick(['bin_add', 'hex_sub', 'bin_mult', 'dec_hex']);
+  let desc, ans;
+  if (variant === 'bin_add') {
+    const dec = randInt(10, 50), add = randInt(5, 30);
+    ans = (dec + add).toString(2); desc = `Convert binary ${dec.toString(2)} to decimal, add ${add}, then convert the result back to binary.`;
+  } else if (variant === 'hex_sub') {
+    const dec = randInt(30, 200), sub = randInt(5, dec - 1);
+    ans = String(dec - sub); desc = `Convert hexadecimal ${dec.toString(16).toUpperCase()} to decimal, then subtract ${sub}.`;
+  } else if (variant === 'bin_mult') {
+    const dec = randInt(5, 20), mult = randInt(2, 8);
+    ans = String(dec * mult); desc = `Convert binary ${dec.toString(2)} to decimal, then multiply by ${mult}.`;
+  } else {
+    const a = randInt(5, 15), b = randInt(5, 15);
+    ans = (a * b).toString(16); desc = `Multiply ${a} by ${b}, then convert the result to hexadecimal (lowercase).`;
+  }
+  const t = pick([d => d, d => `Work through this: ${d}`, d => `Solve step by step: ${d}`]);
+  return { prompt: t(desc) + ' ' + ri(), answer: ans.toLowerCase() };
+};
+
+CHALLENGE_TYPES.word_extraction_chain = () => {
+  const cvowels = 'aeiou', ccons = 'bcdfghjklmnprstvwxyz';
+  function rword() {
+    const len = randInt(4, 8);
+    return Array.from({ length: len }, (_, i) => i % 2 === 0 ? ccons[randInt(0, ccons.length - 1)] : cvowels[randInt(0, cvowels.length - 1)]).join('').replace(/^./, c => c.toUpperCase());
+  }
+  const nw = randInt(5, 7);
+  const words = Array.from({ length: nw }, rword);
+  const sentence = words.join(' ');
+  const variant = pick(['first_sort', 'last_reverse', 'nth_join', 'first_reverse', 'count_vowels']);
+  let desc, ans;
+  if (variant === 'first_sort') {
+    const letters = words.map(w => w[0].toLowerCase()).sort();
+    ans = letters.join(', '); desc = `Take the first letter of each word in "${sentence}", then sort them alphabetically.`;
+  } else if (variant === 'last_reverse') {
+    const letters = words.map(w => w[w.length - 1].toLowerCase()).reverse();
+    ans = letters.join(', '); desc = `Take the last letter of each word in "${sentence}", then list them in reverse order.`;
+  } else if (variant === 'nth_join') {
+    const letters = words.filter(w => w.length >= 2).map(w => w[1].toLowerCase());
+    ans = letters.join(''); desc = `Extract the 2nd letter from each word in "${sentence}" and join them together into one string.`;
+  } else if (variant === 'first_reverse') {
+    const letters = words.map(w => w[0].toLowerCase()).reverse();
+    ans = letters.join(''); desc = `Take the first letter of each word in "${sentence}" and write them in reverse order as a single string.`;
+  } else {
+    const counts = words.map(w => [...w.toLowerCase()].filter(c => 'aeiou'.includes(c)).length);
+    ans = counts.join(', '); desc = `Count the number of vowels in each word of "${sentence}" and list the counts separated by commas.`;
+  }
+  const t = pick([d => d, d => `Follow these steps: ${d}`, d => `Work through this: ${d}`]);
+  return { prompt: t(desc) + ' ' + ri(), answer: ans.toLowerCase() };
+};
+
+CHALLENGE_TYPES.letter_math = () => {
+  const pos = c => c.toUpperCase().charCodeAt(0) - 64;
+  const AZ = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const variant = pick(['sum', 'sub', 'mult', 'sum_word', 'prod_mod']);
+  let desc, ans;
+  if (variant === 'sum') {
+    const n = randInt(3, 4);
+    const letters = [];
+    while (letters.length < n) { const l = AZ[randInt(0, 25)]; if (!letters.includes(l)) letters.push(l); }
+    ans = String(letters.reduce((s, l) => s + pos(l), 0));
+    desc = `Add the letter values of ${letters.join(', ')}.`;
+  } else if (variant === 'sub') {
+    const l1 = AZ[randInt(12, 25)], l2 = AZ[randInt(0, 11)];
+    ans = String(pos(l1) - pos(l2)); desc = `Subtract the value of ${l2} from the value of ${l1}.`;
+  } else if (variant === 'mult') {
+    const l1 = AZ[randInt(0, 9)], l2 = AZ[randInt(0, 9)];
+    ans = String(pos(l1) * pos(l2)); desc = `Multiply the value of ${l1} by the value of ${l2}.`;
+  } else if (variant === 'sum_word') {
+    const len = randInt(4, 6);
+    const word = Array.from({ length: len }, () => AZ[randInt(0, 25)]).join('');
+    ans = String([...word].reduce((s, c) => s + pos(c), 0));
+    desc = `Sum the letter values of all characters in "${word}".`;
+  } else {
+    const l1 = AZ[randInt(0, 7)], l2 = AZ[randInt(0, 7)], m = randInt(5, 10);
+    ans = String((pos(l1) * pos(l2)) % m);
+    desc = `Multiply the value of ${l1} by ${l2}, then find the remainder when divided by ${m}.`;
+  }
+  const t = pick([d => d, d => `Using A=1, B=2, ... Z=26: ${d}`, d => `Letter positions: A=1 through Z=26. ${d}`]);
+  return { prompt: t(desc) + ' ' + ri(), answer: ans };
+};
+
 const DIFFICULTY_MAP = {
   easy: ['reverse_string', 'simple_math', 'pattern', 'counting'],
   medium: ['reverse_string', 'simple_math', 'rot13', 'letter_position', 'extract_letters', 'pattern', 'counting', 'sorting', 'binary'],
-  hard: Object.keys(CHALLENGE_TYPES),
+  hard: ['caesar', 'word_math', 'transform', 'binary', 'sorting', 'rot13', 'extract_letters', 'letter_position', 'counting', 'pattern', 'reverse_string', 'simple_math'],
+  agentic: ['chained_transform', 'multi_step_math', 'base_conversion_chain', 'word_extraction_chain', 'letter_math', 'caesar'],
 };
 
 

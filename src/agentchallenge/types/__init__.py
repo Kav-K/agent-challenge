@@ -20,8 +20,13 @@ from .sorting import SortingChallenge
 from .counting import CountingChallenge
 from .transform import TransformChallenge
 from .binary import BinaryChallenge
+from .chained_transform import ChainedTransformChallenge
+from .multi_step_math import MultiStepMathChallenge
+from .base_conversion_chain import BaseConversionChainChallenge
+from .word_extraction_chain import WordExtractionChainChallenge
+from .letter_math import LetterMathChallenge
 
-# Registry of all challenge types — 12 types, each with multiple random variants
+# Registry of all challenge types — 17 types, each with multiple random variants
 CHALLENGE_TYPES = {
     "reverse_string": ReverseStringChallenge,
     "simple_math": MathChallenge,
@@ -35,6 +40,11 @@ CHALLENGE_TYPES = {
     "counting": CountingChallenge,
     "transform": TransformChallenge,
     "binary": BinaryChallenge,
+    "chained_transform": ChainedTransformChallenge,
+    "multi_step_math": MultiStepMathChallenge,
+    "base_conversion_chain": BaseConversionChainChallenge,
+    "word_extraction_chain": WordExtractionChainChallenge,
+    "letter_math": LetterMathChallenge,
 }
 
 # Difficulty presets
@@ -46,7 +56,15 @@ DIFFICULTY_MAP = {
         "reverse_string", "simple_math", "rot13", "letter_position",
         "extract_letters", "pattern", "counting", "sorting", "binary",
     ],
-    "hard": list(CHALLENGE_TYPES.keys()),
+    "hard": [
+        "caesar", "word_math", "transform", "binary", "sorting",
+        "rot13", "extract_letters", "letter_position", "counting",
+        "pattern", "reverse_string", "simple_math",
+    ],
+    "agentic": [
+        "chained_transform", "multi_step_math", "base_conversion_chain",
+        "word_extraction_chain", "letter_math", "caesar",
+    ],
 }
 
 
