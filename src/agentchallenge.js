@@ -1361,15 +1361,41 @@ CHALLENGE_TYPES.string_interleave = () => {
   }
 };
 
+// Chained arithmetic: (a+b)*c - d mod m — GPT-5.2 100%, GPT-4o 30%
+CHALLENGE_TYPES.chained_arithmetic = () => {
+  const a = randInt(2, 9), b = randInt(2, 9), c = randInt(2, 5), d = randInt(1, 9), m = randInt(3, 7);
+  const result = ((a + b) * c - d) % m;
+  const templates = [
+    `Compute (${a} + ${b}), multiply by ${c}, subtract ${d}, then find the remainder when divided by ${m}.`,
+    `Add ${a} and ${b}. Multiply the result by ${c}. Subtract ${d}. What is the remainder when divided by ${m}?`,
+    `What is ((${a} + ${b}) × ${c} - ${d}) mod ${m}?`,
+    `Calculate ${a} plus ${b}, times ${c}, minus ${d}. Find the remainder after dividing by ${m}.`,
+  ];
+  return { prompt: buildPrompt(pick(templates)), answer: String(result) };
+};
+
+// Power modulo: base^exp mod m — GPT-5.2 100%, GPT-4o 80%
+CHALLENGE_TYPES.power_mod = () => {
+  const base = randInt(2, 5), exp = randInt(3, 6), m = randInt(5, 13);
+  const answer = (base ** exp) % m;
+  const templates = [
+    `Compute ${base} raised to the power ${exp}, then find the remainder when divided by ${m}.`,
+    `What is ${base}^${exp} mod ${m}?`,
+    `Calculate ${base} to the ${exp}th power. Find the remainder when divided by ${m}.`,
+    `Raise ${base} to the power of ${exp}. What is the remainder after dividing by ${m}?`,
+  ];
+  return { prompt: buildPrompt(pick(templates)), answer: String(answer) };
+};
+
 const DIFFICULTY_MAP = {
   // Easy: gpt-4o-mini solves 100% single-shot (empirically validated)
   easy: ['simple_math', 'string_math', 'binary', 'pattern'],
-  // Medium: gpt-4o solves 100%, gpt-4o-mini starts failing (80-90%)
+  // Medium: gpt-4o ~90%, gpt-4o-mini ~60%
   medium: ['sorting', 'word_math'],
-  // Hard: gpt-4o fails significantly (<70%), gpt-4o-mini near-zero
-  hard: ['nested_operations', 'base_conversion_chain'],
+  // Hard: gpt-5.2 100%, gpt-4o ~70-80%
+  hard: ['nested_operations', 'base_conversion_chain', 'power_mod'],
   // Agentic: multi-step chains, blocks both gpt-4o and gpt-4o-mini
-  agentic: ['string_length', 'substring'],
+  agentic: ['string_length', 'substring', 'chained_arithmetic'],
 };
 
 

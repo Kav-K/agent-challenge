@@ -1677,13 +1677,13 @@ def _():
 def _():
     assert len(DIFFICULTY_MAP["medium"]) == 2, f"Medium has {len(DIFFICULTY_MAP['medium'])} types, expected 2"
 
-@test("difficulty: hard tier has exactly 2 types")
+@test("difficulty: hard tier has exactly 3 types")
 def _():
-    assert len(DIFFICULTY_MAP["hard"]) == 2, f"Hard has {len(DIFFICULTY_MAP['hard'])} types, expected 2"
+    assert len(DIFFICULTY_MAP["hard"]) == 3, f"Hard has {len(DIFFICULTY_MAP['hard'])} types, expected 3"
 
-@test("difficulty: agentic tier has exactly 2 types")
+@test("difficulty: agentic tier has exactly 3 types")
 def _():
-    assert len(DIFFICULTY_MAP["agentic"]) == 2, f"Agentic has {len(DIFFICULTY_MAP['agentic'])} types, expected 2"
+    assert len(DIFFICULTY_MAP["agentic"]) == 3, f"Agentic has {len(DIFFICULTY_MAP['agentic'])} types, expected 3"
 
 @test("difficulty: all types in DIFFICULTY_MAP exist in CHALLENGE_TYPES")
 def _():

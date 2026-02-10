@@ -33,6 +33,8 @@ from .substring import SubstringChallenge
 from .zigzag import ZigzagChallenge
 from .nested_operations import NestedOperationsChallenge
 from .string_interleave import StringInterleaveChallenge
+from .chained_arithmetic import ChainedArithmeticChallenge
+from .power_mod import PowerModChallenge
 
 # Registry of all challenge types — 25 types, each with multiple random variants
 CHALLENGE_TYPES = {
@@ -61,6 +63,8 @@ CHALLENGE_TYPES = {
     "zigzag": ZigzagChallenge,
     "nested_operations": NestedOperationsChallenge,
     "string_interleave": StringInterleaveChallenge,
+    "chained_arithmetic": ChainedArithmeticChallenge,
+    "power_mod": PowerModChallenge,
 }
 
 # Difficulty presets — empirically calibrated against gpt-5.2, gpt-4o, gpt-4o-mini
@@ -75,13 +79,13 @@ DIFFICULTY_MAP = {
     "medium": [
         "sorting", "word_math",
     ],
-    # Hard: GPT-5.2 100%, GPT-4o ~75%, GPT-4o-mini failing
+    # Hard: GPT-5.2 100%, GPT-4o ~70-80%, GPT-4o-mini struggling
     "hard": [
-        "nested_operations", "base_conversion_chain",
+        "nested_operations", "base_conversion_chain", "power_mod",
     ],
-    # Agentic: GPT-5.2 100%, GPT-4o ~55%, GPT-4o-mini near-zero
+    # Agentic: GPT-5.2 100%, GPT-4o ~30-55%, GPT-4o-mini near-zero
     "agentic": [
-        "string_length", "substring",
+        "string_length", "substring", "chained_arithmetic",
     ],
 }
 
