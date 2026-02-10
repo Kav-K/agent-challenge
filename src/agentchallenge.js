@@ -336,6 +336,8 @@ function decodeToken(token, secret) {
   if (!token || !token.includes('.')) throw new Error('Invalid token format');
   const idx = token.lastIndexOf('.');
   const data = token.slice(0, idx), sig = token.slice(idx + 1);
+  // HMAC-SHA256 hex is always exactly 64 chars; reject anything else
+  if (!/^[0-9a-f]{64}$/.test(sig)) throw new Error('Invalid token signature');
   const expected = hmacSign(data, secret);
   if (!crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) throw new Error('Invalid token signature');
   return JSON.parse(Buffer.from(data, 'base64url').toString());
