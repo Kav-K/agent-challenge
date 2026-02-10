@@ -1361,17 +1361,65 @@ CHALLENGE_TYPES.string_interleave = () => {
   }
 };
 
-// Chained arithmetic: (a+b)*c - d mod m — GPT-5.2 100%, GPT-4o 30%
+// Chained arithmetic: multi-step chains + knowledge facts — GPT-5.2 100%, GPT-4o 30%
 CHALLENGE_TYPES.chained_arithmetic = () => {
-  const a = randInt(2, 9), b = randInt(2, 9), c = randInt(2, 5), d = randInt(1, 9), m = randInt(3, 7);
-  const result = ((a + b) * c - d) % m;
-  const templates = [
-    `Compute (${a} + ${b}), multiply by ${c}, subtract ${d}, then find the remainder when divided by ${m}.`,
-    `Add ${a} and ${b}. Multiply the result by ${c}. Subtract ${d}. What is the remainder when divided by ${m}?`,
-    `What is ((${a} + ${b}) × ${c} - ${d}) mod ${m}?`,
-    `Calculate ${a} plus ${b}, times ${c}, minus ${d}. Find the remainder after dividing by ${m}.`,
+  const KFACTS = [
+    ["the atomic number of oxygen (8)", 8], ["the atomic number of carbon (6)", 6],
+    ["the atomic number of nitrogen (7)", 7], ["the atomic number of neon (10)", 10],
+    ["the atomic number of sodium (11)", 11], ["the number of planets in our solar system (8)", 8],
+    ["the number of continents on Earth (7)", 7], ["the number of sides on a hexagon (6)", 6],
+    ["the number of sides on a pentagon (5)", 5], ["the number of strings on a guitar (6)", 6],
+    ["the number of strings on a violin (4)", 4], ["the US flag's stripe count (13)", 13],
+    ["the number of legs on a spider (8)", 8], ["the number of legs on an insect (6)", 6],
+    ["the number of Harry Potter books (7)", 7], ["Brazil's FIFA World Cup titles (5)", 5],
+    ["the number of Olympic rings (5)", 5], ["the total dots on a die (21)", 21],
+    ["the number of ounces in a pound (16)", 16], ["the number of inches in a foot (12)", 12],
+    ["the number of bits in a byte (8)", 8], ["Beethoven's symphony count (9)", 9],
+    ["the number of players on a soccer team (11)", 11], ["the number of players on a basketball team (5)", 5],
+    ["the number of holes on a golf course (18)", 18], ["the number of hours in a day (24)", 24],
   ];
-  return { prompt: buildPrompt(pick(templates)), answer: String(result) };
+
+  const pattern = pick(["add_mul_sub_mod", "mul_add_mul_mod", "add_square_sub_mod", "mul_sub_add_mod", "knowledge_chain", "knowledge_chain_v2"]);
+
+  if (pattern === "add_mul_sub_mod") {
+    const a = randInt(2,9), b = randInt(2,9), c = randInt(2,5), d = randInt(1,9), m = randInt(3,7);
+    return { prompt: buildPrompt(pick([
+      `Compute (${a} + ${b}), multiply by ${c}, subtract ${d}, then find the remainder when divided by ${m}.`,
+      `Add ${a} and ${b}. Multiply the result by ${c}. Subtract ${d}. What is the remainder when divided by ${m}?`,
+    ])), answer: String(((a + b) * c - d) % m) };
+  } else if (pattern === "mul_add_mul_mod") {
+    const a = randInt(2,7), b = randInt(2,5), c = randInt(3,9), d = randInt(2,4), m = randInt(3,7);
+    return { prompt: buildPrompt(pick([
+      `Multiply ${a} by ${b}. Add ${c}. Multiply by ${d}. Find the remainder when divided by ${m}.`,
+      `Compute ${a} × ${b}, add ${c}, multiply that by ${d}, then take mod ${m}.`,
+    ])), answer: String(((a * b + c) * d) % m) };
+  } else if (pattern === "add_square_sub_mod") {
+    const a = randInt(2,5), b = randInt(1,4), c = randInt(1,8), m = randInt(3,7);
+    return { prompt: buildPrompt(pick([
+      `Add ${a} and ${b}. Square the result. Subtract ${c}. Find the remainder when divided by ${m}.`,
+      `Compute (${a} + ${b})², subtract ${c}, then find the remainder mod ${m}.`,
+    ])), answer: String(((a + b) ** 2 - c) % m) };
+  } else if (pattern === "mul_sub_add_mod") {
+    const a = randInt(3,9), b = randInt(2,5), c = randInt(1, Math.min(a*b-1,9)), d = randInt(2,9), m = randInt(3,7);
+    return { prompt: buildPrompt(pick([
+      `Multiply ${a} by ${b}. Subtract ${c}. Add ${d}. Find the remainder when divided by ${m}.`,
+      `Compute ${a} × ${b} - ${c} + ${d}, then take mod ${m}.`,
+    ])), answer: String((a * b - c + d) % m) };
+  } else if (pattern === "knowledge_chain") {
+    const [desc, val] = pick(KFACTS);
+    const c = randInt(2,5), d = randInt(1,9), m = randInt(3,7);
+    return { prompt: buildPrompt(pick([
+      `Take ${desc}. Multiply it by ${c}. Subtract ${d}. Find the remainder when divided by ${m}.`,
+      `Start with ${desc}. Times ${c}, minus ${d}, mod ${m}. What's the answer?`,
+    ])), answer: String((val * c - d) % m) };
+  } else { // knowledge_chain_v2
+    const [[d1,v1],[d2,v2]] = pickN(KFACTS, 2);
+    const c = randInt(2,4), m = randInt(3,7);
+    return { prompt: buildPrompt(pick([
+      `Add ${d1} to ${d2}. Multiply the sum by ${c}. Find the remainder when divided by ${m}.`,
+      `Take ${d1} and ${d2}. Sum them, multiply by ${c}, then mod ${m}.`,
+    ])), answer: String(((v1 + v2) * c) % m) };
+  }
 };
 
 // Power modulo: base^exp mod m — GPT-5.2 100%, GPT-4o 80%
