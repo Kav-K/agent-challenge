@@ -1368,6 +1368,91 @@ def _():
     answer = safe_solve("What is 6 * 7?", llm_fn=mock_llm)
     assert answer == "42"
 
+# ── safe_solve exact-answer enforcement ───────────────
+print("\n── safe_solve exact-answer enforcement ─────────")
+
+@test("safe_solve: strips markdown code fences")
+def _():
+    def mock_llm(s, u): return "```\n42\n```"
+    assert safe_solve("What is 6*7?", llm_fn=mock_llm) == "42"
+
+@test("safe_solve: strips code fence with language tag")
+def _():
+    def mock_llm(s, u): return "```text\nHELLO\n```"
+    assert safe_solve("Reverse OLLEH", llm_fn=mock_llm) == "HELLO"
+
+@test("safe_solve: strips surrounding double quotes")
+def _():
+    def mock_llm(s, u): return '"42"'
+    assert safe_solve("What is 6*7?", llm_fn=mock_llm) == "42"
+
+@test("safe_solve: strips surrounding single quotes")
+def _():
+    def mock_llm(s, u): return "'HELLO'"
+    assert safe_solve("Reverse OLLEH", llm_fn=mock_llm) == "HELLO"
+
+@test("safe_solve: strips surrounding backticks")
+def _():
+    def mock_llm(s, u): return "`42`"
+    assert safe_solve("What is 6*7?", llm_fn=mock_llm) == "42"
+
+@test("safe_solve: multi-line takes first non-empty line")
+def _():
+    def mock_llm(s, u): return "42\nThis is my explanation"
+    assert safe_solve("What is 6*7?", llm_fn=mock_llm) == "42"
+
+@test("safe_solve: extracts answer from 'the answer is X'")
+def _():
+    def mock_llm(s, u): return "the answer is 42"
+    assert safe_solve("What is 6*7?", llm_fn=mock_llm) == "42"
+
+@test("safe_solve: extracts answer from 'the result is: X'")
+def _():
+    def mock_llm(s, u): return "the result is: HELLO"
+    assert safe_solve("Reverse OLLEH", llm_fn=mock_llm) == "HELLO"
+
+@test("safe_solve: extracts answer from 'therefore X'")
+def _():
+    def mock_llm(s, u): return "therefore 42"
+    assert safe_solve("What is 6*7?", llm_fn=mock_llm) == "42"
+
+@test("safe_solve: strips quotes after explanation extraction")
+def _():
+    def mock_llm(s, u): return 'the answer is "42"'
+    assert safe_solve("What is 6*7?", llm_fn=mock_llm) == "42"
+
+@test("safe_solve: blocks import statement in answer")
+def _():
+    def mock_llm(s, u): return "import os"
+    try:
+        safe_solve("What is 2+2?", llm_fn=mock_llm)
+        assert False, "Should have raised"
+    except ValueError as e:
+        assert "suspicious" in str(e).lower()
+
+@test("safe_solve: blocks require() in answer")
+def _():
+    def mock_llm(s, u): return "require('fs')"
+    try:
+        safe_solve("What is 2+2?", llm_fn=mock_llm)
+        assert False, "Should have raised"
+    except ValueError as e:
+        assert "suspicious" in str(e).lower()
+
+@test("safe_solve: blocks __proto__ in answer")
+def _():
+    def mock_llm(s, u): return "__proto__"
+    try:
+        safe_solve("What is 2+2?", llm_fn=mock_llm)
+        assert False, "Should have raised"
+    except ValueError as e:
+        assert "suspicious" in str(e).lower()
+
+@test("safe_solve: clean short answer passes through unchanged")
+def _():
+    def mock_llm(s, u): return "KRPS"
+    assert safe_solve("Reverse SPARK then remove vowels", llm_fn=mock_llm) == "KRPS"
+
 
 # ── prompt_builder Tests ──────────────────────────────
 print("\n── prompt_builder ──────────────────────────────")
