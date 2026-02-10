@@ -170,17 +170,19 @@ It reads `Authorization: Bearer <token>` from headers and `challenge_token` / `a
 
 ## Challenge Types
 
-12 challenge types across 3 difficulty tiers. All use randomized inputs — no fixed word lists.
+25 challenge types across 4 difficulty tiers. All use randomized inputs — no fixed word lists.
 
-### Easy
+### Easy (6 types)
 | Type | Example |
 |------|---------|
 | `reverse_string` | Reverse "PYTHON" → `NOHTYP` |
 | `simple_math` | 234 + 567 = `801` |
 | `pattern` | 2, 4, 8, 16, ? → `32` |
 | `counting` | Count vowels in "CHALLENGE" → `3` |
+| `string_length` | How many characters in "HELLO"? → `5` |
+| `first_last` | First and last char of "PYTHON" → `p, n` |
 
-### Medium
+### Medium (11 types)
 | Type | Example |
 |------|---------|
 | `rot13` | Decode "URYYB" → `HELLO` |
@@ -188,15 +190,35 @@ It reads `Authorization: Bearer <token>` from headers and `challenge_token` / `a
 | `extract_letters` | Every 2nd char of "HWEOLRLLOD" → `WORLD` |
 | `sorting` | Sort [7,2,9,1] ascending → `1,2,7,9` |
 | `binary` | Convert 42 to binary → `101010` |
+| `ascii_value` | ASCII code for 'M' → `77` |
+| `string_math` | "CAT" has 3 letters, "DOG" has 3 → 3×3 = `9` |
+| *+ all easy types* | |
 
-### Hard
+### Hard (14 types)
 | Type | Example |
 |------|---------|
 | `caesar` | Decrypt "KHOOR" with shift 3 → `HELLO` |
 | `word_math` | 7 + 8 as a word → `fifteen` |
 | `transform` | Uppercase + reverse "hello" → `OLLEH` |
+| `substring` | Characters 3–6 of "PROGRAMMING" → `ogra` |
+| `zigzag` | Read "ABCDEF" in zigzag with 2 rows → `ACEBDF` |
+| *+ all medium types* | |
 
-Each type has 3–8 prompt templates with randomized phrasing, making regex-based solvers impractical.
+### Agentic (8 types) — for top-tier LLMs only
+| Type | Example |
+|------|---------|
+| `chained_transform` | Reverse "PYTHON", then ROT13 → `ABUGIC` |
+| `multi_step_math` | 17 × 23, then digit sum → `13` |
+| `base_conversion_chain` | Binary 11010 → decimal, +15, → binary = `101001` |
+| `word_extraction_chain` | First letter of each word, sorted alphabetically |
+| `letter_math` | Sum letter values of "BVJCSX" (A=1..Z=26) → `80` |
+| `nested_operations` | ((15 + 7) × 3) - 12 → `54` |
+| `string_interleave` | Interleave "ABC" and "DEF" → `ADBECF` |
+| `caesar` | Decrypt with shift 1–13 |
+
+Agentic challenges require multi-step reasoning and working memory — smaller models and humans can't solve them under time pressure.
+
+Each type has multiple prompt templates (450+) with randomized phrasing. Agentic types use **dynamic prompt assembly** with ~10,000+ structural variations per type, making regex-based solvers impractical even with full source code access.
 
 ## Dynamic Challenges (Optional)
 
@@ -239,7 +261,7 @@ Combine a tight time limit with hard difficulty to create endpoints that **only 
 ```python
 ac = AgentChallenge(
     secret="your-secret",
-    difficulty="hard",      # caesar, word_math, transform
+    difficulty="agentic",   # multi-step chains — only top-tier LLMs pass
     ttl=10,                 # 10 seconds — impossible for humans
     persistent=False,       # challenge every request
 )
@@ -250,14 +272,14 @@ This is useful for:
 - **Internal tooling** that should only be called by AI systems
 - **Preventing manual API abuse** even by authenticated users with the endpoint URL
 
-The `ttl` parameter controls how long an agent has to solve the challenge after it's issued. At `difficulty="hard"` with `ttl=10`, the challenge requires genuine LLM reasoning (not just string reversal) and must be solved faster than any human could manage.
+The `ttl` parameter controls how long an agent has to solve the challenge after it's issued. At `difficulty="agentic"` with `ttl=10`, the challenge requires multi-step reasoning (chained transforms, base conversions, letter arithmetic) that no human can solve in time and weaker models fail at consistently.
 
 ## Configuration
 
 ```python
 ac = AgentChallenge(
     secret="your-secret",       # Required — HMAC signing key (min 8 chars)
-    difficulty="medium",        # "easy" | "medium" | "hard" (default: "easy")
+    difficulty="medium",        # "easy" | "medium" | "hard" | "agentic" (default: "easy")
     ttl=300,                    # Challenge expiry in seconds (default: 300)
     types=["rot13", "caesar"],  # Restrict to specific challenge types
     persistent=True,            # Issue permanent tokens (default: True)
@@ -352,6 +374,66 @@ def call_api(payload):
 ```
 
 Document this pattern in your API's SKILL.md or agent docs, and any LLM-powered agent can authenticate autonomously.
+
+## Security
+
+agent-challenge is **fully open source** — security through transparency, not obscurity.
+
+### Prompt Injection Defense
+
+When agents call APIs protected by agent-challenge, they receive challenge prompts. A malicious API operator could theoretically embed prompt injection in that text. The library ships client-side defenses:
+
+**`validate_prompt()`** — checks prompts before your LLM sees them:
+
+```python
+from agentchallenge import validate_prompt
+
+result = validate_prompt(challenge["prompt"])
+if not result["safe"]:
+    raise ValueError(f"Blocked: {result['reason']} (score: {result['score']})")
+```
+
+Catches: URLs, code injection, role hijacking ("you are now", "pretend to be"), override instructions ("ignore previous"), data exfiltration ("send me your API key"), oversized prompts, structural anomalies.
+
+**`safe_solve()`** — sandboxed solver with isolation:
+
+```python
+from agentchallenge import safe_solve
+
+def my_llm(system_prompt, user_prompt):
+    return openai.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        max_tokens=50,      # short answers only
+        temperature=0,      # deterministic
+    ).choices[0].message.content
+
+answer = safe_solve(challenge["prompt"], llm_fn=my_llm)
+```
+
+Three layers: input validation → LLM isolation (no tools, strict system prompt) → output validation (length cap, no URLs/code in answer).
+
+```javascript
+// Node.js
+import { validatePrompt, safeSolve } from 'agent-challenge';
+
+const result = validatePrompt(challenge.prompt);
+const answer = await safeSolve(challenge.prompt, myLlmFn);
+```
+
+### Anti-Scripting
+
+Even with full source code access, building a deterministic solver is impractical:
+
+- **450+ prompt templates** across all types with randomized phrasing
+- **Dynamic prompt assembly** for agentic tier (~10,000+ structural variations per type)
+- **Decoy injection** — session IDs, timestamps, reference numbers mixed into prompts
+- **Data position randomization** — challenge data appears at different positions in the sentence
+
+> Full security analysis: [challenge.llm.kaveenk.com/#security](https://challenge.llm.kaveenk.com/#security)
 
 ## Testing
 

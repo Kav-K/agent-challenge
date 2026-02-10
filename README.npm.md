@@ -109,7 +109,7 @@ Tight time limit + hard difficulty = only AI agents can pass:
 ```javascript
 const ac = new AgentChallenge({
   secret: 'your-secret',
-  difficulty: 'hard',     // caesar, word_math, transform
+  difficulty: 'agentic',  // multi-step chains — only top-tier LLMs pass
   ttl: 10,                // 10 seconds — humans can't
   persistent: false,      // challenge every request
 });
@@ -122,7 +122,7 @@ A human can't decode a caesar cipher in 10 seconds. An LLM does it in under 2.
 ```javascript
 const ac = new AgentChallenge({
   secret: 'your-secret',       // Required — HMAC signing key (min 8 chars)
-  difficulty: 'medium',        // 'easy' | 'medium' | 'hard' (default: 'easy')
+  difficulty: 'medium',        // 'easy' | 'medium' | 'hard' | 'agentic' (default: 'easy')
   ttl: 300,                    // Challenge expiry in seconds (default: 300)
   types: ['rot13', 'caesar'],  // Restrict to specific types (optional)
   persistent: true,            // Issue permanent tokens (default: true)
