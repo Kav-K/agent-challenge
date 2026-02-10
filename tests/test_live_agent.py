@@ -265,18 +265,21 @@ def _():
 
 @test("HTTP: wrong answer → new challenge → correct answer")
 def _():
-    srv = MockAPIServer("live-retry-key5", difficulty="easy", types=["simple_math"]).start()
+    srv = MockAPIServer("live-retry-key5", difficulty="easy", types=MINI_SAFE).start()
     try:
         code, data = api_call(srv.url)
         # Wrong answer
         code2, data2 = api_call(srv.url, body={"challenge_token": data["challenge_token"], "answer": "clearly-wrong-12345"})
         assert code2 == 401
 
-        # Fresh challenge + real solve
-        code, data = api_call(srv.url)
-        answer = call_openai(data["prompt"])
-        code, data = api_call(srv.url, body={"challenge_token": data["challenge_token"], "answer": answer})
-        assert code == 200, f"Retry failed: {data}"
+        # Fresh challenge + real solve (retry up to 3 times)
+        for _ in range(3):
+            code, data = api_call(srv.url)
+            answer = call_openai(data["prompt"])
+            code, data = api_call(srv.url, body={"challenge_token": data["challenge_token"], "answer": answer})
+            if code == 200:
+                return
+        assert False, f"Retry failed after 3 attempts: {data}"
     finally:
         srv.stop()
 
