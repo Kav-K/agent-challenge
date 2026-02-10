@@ -11,6 +11,8 @@
   </p>
 </p>
 
+> **📖 Full documentation, live demo, and interactive examples: [challenge.llm.kaveenk.com](https://challenge.llm.kaveenk.com)**
+
 ---
 
 ## Why?
