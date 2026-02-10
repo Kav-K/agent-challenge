@@ -1,8 +1,9 @@
 """
 Chained arithmetic: 4-step chain with small numbers.
-(a + b) * c - d, then modulo m.
+Multiple operation patterns to avoid repetitiveness.
 
 GPT-5.2: 100% | GPT-4o: 30% | GPT-4o-mini: ~10%
+Humans: requires ~15-20s mental arithmetic without paper
 """
 import random
 from typing import Tuple
@@ -10,21 +11,68 @@ from ..templates import reply_inst
 
 
 class ChainedArithmeticChallenge:
+    PATTERNS = [
+        "add_mul_sub_mod",
+        "mul_add_mul_mod",
+        "add_square_sub_mod",
+        "mul_sub_add_mod",
+    ]
+
     @staticmethod
     def generate() -> Tuple[str, str]:
-        a = random.randint(2, 9)
-        b = random.randint(2, 9)
-        c = random.randint(2, 5)
-        d = random.randint(1, 9)
-        m = random.randint(3, 7)
-        result = ((a + b) * c - d) % m
+        pattern = random.choice(ChainedArithmeticChallenge.PATTERNS)
 
-        templates = [
-            lambda: f"Compute ({a} + {b}), multiply by {c}, subtract {d}, then find the remainder when divided by {m}.",
-            lambda: f"Add {a} and {b}. Multiply the result by {c}. Subtract {d}. What is the remainder when divided by {m}?",
-            lambda: f"What is (({a} + {b}) × {c} - {d}) mod {m}?",
-            lambda: f"Calculate {a} plus {b}, times {c}, minus {d}. Find the remainder after dividing by {m}.",
-            lambda: f"Start with {a} + {b}. Multiply by {c}. Take away {d}. Divide by {m} and give the remainder.",
-        ]
-        prompt = random.choice(templates)() + " " + reply_inst()
+        if pattern == "add_mul_sub_mod":
+            a = random.randint(2, 9)
+            b = random.randint(2, 9)
+            c = random.randint(2, 5)
+            d = random.randint(1, 9)
+            m = random.randint(3, 7)
+            result = ((a + b) * c - d) % m
+            templates = [
+                f"Compute ({a} + {b}), multiply by {c}, subtract {d}, then find the remainder when divided by {m}.",
+                f"Add {a} and {b}. Multiply the result by {c}. Subtract {d}. What is the remainder when divided by {m}?",
+                f"What is (({a} + {b}) × {c} - {d}) mod {m}?",
+                f"Calculate {a} plus {b}, times {c}, minus {d}. Find the remainder after dividing by {m}.",
+            ]
+
+        elif pattern == "mul_add_mul_mod":
+            a = random.randint(2, 7)
+            b = random.randint(2, 5)
+            c = random.randint(3, 9)
+            d = random.randint(2, 4)
+            m = random.randint(3, 7)
+            result = ((a * b + c) * d) % m
+            templates = [
+                f"Multiply {a} by {b}. Add {c}. Multiply by {d}. Find the remainder when divided by {m}.",
+                f"Compute {a} × {b}, add {c}, multiply that by {d}, then take mod {m}.",
+                f"What is (({a} × {b} + {c}) × {d}) mod {m}?",
+            ]
+
+        elif pattern == "add_square_sub_mod":
+            a = random.randint(2, 5)
+            b = random.randint(1, 4)
+            c = random.randint(1, 8)
+            m = random.randint(3, 7)
+            result = ((a + b) ** 2 - c) % m
+            templates = [
+                f"Add {a} and {b}. Square the result. Subtract {c}. Find the remainder when divided by {m}.",
+                f"Compute ({a} + {b})², subtract {c}, then find the remainder mod {m}.",
+                f"What is ({a} + {b}) squared, minus {c}, modulo {m}?",
+            ]
+
+        else:  # mul_sub_add_mod
+            a = random.randint(3, 9)
+            b = random.randint(2, 5)
+            c = random.randint(1, min(a * b - 1, 9))
+            d = random.randint(2, 9)
+            m = random.randint(3, 7)
+            result = (a * b - c + d) % m
+            templates = [
+                f"Multiply {a} by {b}. Subtract {c}. Add {d}. Find the remainder when divided by {m}.",
+                f"Compute {a} × {b} - {c} + {d}, then take mod {m}.",
+                f"What is ({a} × {b} - {c} + {d}) mod {m}?",
+            ]
+
+        prompt = random.choice(templates) + " " + reply_inst()
         return prompt, str(result)

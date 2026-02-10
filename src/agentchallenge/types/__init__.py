@@ -83,9 +83,10 @@ DIFFICULTY_MAP = {
     "hard": [
         "nested_operations", "base_conversion_chain", "power_mod",
     ],
-    # Agentic: GPT-5.2 100%, GPT-4o ~30-55%, GPT-4o-mini near-zero
+    # Agentic: GPT-5.2 100%, GPT-4o ~30%, humans can't solve in <10s
+    # Multi-step arithmetic chains requiring sequential computation
     "agentic": [
-        "string_length", "substring", "chained_arithmetic",
+        "chained_arithmetic",
     ],
 }
 
@@ -93,6 +94,8 @@ DIFFICULTY_MAP = {
 # These remain importable and in CHALLENGE_TYPES but are excluded from
 # difficulty-based random selection.
 SHELVED_TYPES = [
+    "string_length",         # gpt-5.2: 100% but trivial for humans
+    "substring",             # gpt-5.2: 100% but trivial for humans
     "first_last",            # gpt-5.2: 80%
     "ascii_value",           # gpt-5.2: 80%
     "counting",              # gpt-5.2: 80%

@@ -1395,7 +1395,7 @@ const DIFFICULTY_MAP = {
   // Hard: gpt-5.2 100%, gpt-4o ~70-80%
   hard: ['nested_operations', 'base_conversion_chain', 'power_mod'],
   // Agentic: multi-step chains, blocks both gpt-4o and gpt-4o-mini
-  agentic: ['string_length', 'substring', 'chained_arithmetic'],
+  agentic: ['chained_arithmetic'],
 };
 
 
