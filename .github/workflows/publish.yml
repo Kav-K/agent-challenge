@@ -6,8 +6,29 @@ on:
   workflow_dispatch:
 
 jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Python tests
+        run: python run_tests.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run JS syntax check
+        run: node --check src/agentchallenge.js
+
   publish-pypi:
     name: Publish to PyPI
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # Required for trusted publishing (no API token needed if configured)
@@ -32,6 +53,7 @@ jobs:
 
   publish-npm:
     name: Publish to npm
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,23 +72,3 @@ jobs:
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_API_KEY }}
-
-  test:
-    name: Run tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Run Python tests
-        run: python run_tests.py
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Run JS syntax check
-        run: node --check src/agentchallenge.js

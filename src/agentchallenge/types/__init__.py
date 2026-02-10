@@ -68,6 +68,11 @@ def generate_challenge(
     else:
         if allowed_types:
             pool = [t for t in allowed_types if t in CHALLENGE_TYPES]
+            if not pool:
+                raise ValueError(
+                    f"No valid challenge types in allowed_types. "
+                    f"Available: {list(CHALLENGE_TYPES.keys())}"
+                )
         else:
             pool = DIFFICULTY_MAP.get(difficulty, DIFFICULTY_MAP["easy"])
         type_name = random.choice(pool)

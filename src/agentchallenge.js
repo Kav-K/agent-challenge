@@ -1,5 +1,5 @@
 /**
- * agent-challenge v0.2.0 (JavaScript/Node.js port)
+ * agent-challenge v0.6.0 (JavaScript/Node.js port)
  *
  * LLM-solvable challenge-response authentication for AI agent APIs.
  * 12 static challenge types with fully randomized inputs.
@@ -345,6 +345,10 @@ function normalizeAnswer(answer) {
   if (typeof answer !== 'string') return '';
   let s = answer.trim().toLowerCase();
   if (s.length >= 2 && s[0] === s[s.length - 1] && (s[0] === '"' || s[0] === "'")) s = s.slice(1, -1).trim();
+  // Strip trailing punctuation (periods, exclamation marks)
+  s = s.replace(/[.!]+$/, '').trim();
+  // Canonicalize comma-separated lists: "1,2,3" and "1, 2, 3" → "1, 2, 3"
+  if (s.includes(',')) s = s.split(',').map(p => p.trim()).join(', ');
   return s.replace(/\s+/g, ' ');
 }
 
@@ -634,7 +638,10 @@ export class AgentChallenge {
     }
 
     // Static mode (or dynamic fallback)
-    const pool = this._types || DIFFICULTY_MAP[this._difficulty] || DIFFICULTY_MAP.easy;
+    const pool = this._types
+      ? this._types.filter(t => CHALLENGE_TYPES[t])
+      : (DIFFICULTY_MAP[this._difficulty] || DIFFICULTY_MAP.easy);
+    if (!pool.length) throw new Error('No valid challenge types configured');
     const typeName = challengeType || pick(pool);
     if (!CHALLENGE_TYPES[typeName]) throw new Error(`Unknown type: ${typeName}`);
     const { prompt, answer } = CHALLENGE_TYPES[typeName]();
@@ -646,7 +653,10 @@ export class AgentChallenge {
    * Use this when you need a sync API and don't need dynamic challenges.
    */
   createSync(challengeType = null) {
-    const pool = this._types || DIFFICULTY_MAP[this._difficulty] || DIFFICULTY_MAP.easy;
+    const pool = this._types
+      ? this._types.filter(t => CHALLENGE_TYPES[t])
+      : (DIFFICULTY_MAP[this._difficulty] || DIFFICULTY_MAP.easy);
+    if (!pool.length) throw new Error('No valid challenge types configured');
     const typeName = challengeType || pick(pool);
     if (!CHALLENGE_TYPES[typeName]) throw new Error(`Unknown type: ${typeName}`);
     const { prompt, answer } = CHALLENGE_TYPES[typeName]();
@@ -696,7 +706,7 @@ export class AgentChallenge {
     if (token) {
       if (!this._persistent) return { status: 'error', error: 'Persistent tokens are disabled' };
       if (this.verifyToken(token)) return { status: 'authenticated' };
-      return { status: 'error', error: 'Invalid or expired token' };
+      return { status: 'error', error: 'Invalid token' };
     }
 
     // Mode 2: Submitting answer
@@ -733,7 +743,7 @@ export class AgentChallenge {
     if (token) {
       if (!this._persistent) return { status: 'error', error: 'Persistent tokens are disabled' };
       if (this.verifyToken(token)) return { status: 'authenticated' };
-      return { status: 'error', error: 'Invalid or expired token' };
+      return { status: 'error', error: 'Invalid token' };
     }
     if (challengeToken && answer) {
       const result = this.verify(challengeToken, answer);

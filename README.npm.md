@@ -69,11 +69,11 @@ Agent                          Your API
   │                               │
   ├──POST { answer, token }─────►│
   │                               ├── gateSync() → correct!
-  │◄──200 { token: "at_7f3..." }──┤
+  │◄──200 { token: "eyJpZ..." }───┤
   │                               │
   │  Saves token permanently      │
   │                               │
-  ├──POST + Bearer at_7f3...────►│
+  ├──POST + Bearer eyJpZ...─────►│
   │                               ├── gateSync() → valid token
   │◄──200 { authenticated }───────┤   (instant, no puzzle)
 ```
@@ -85,7 +85,7 @@ One function, three modes:
 | Arguments | What happens | Response |
 |-----------|-------------|----------|
 | *(none)* | New challenge | `{ status: "challenge_required", prompt, challenge_token }` |
-| `challengeToken` + `answer` | Verify → issue token | `{ status: "authenticated", token: "at_..." }` |
+| `challengeToken` + `answer` | Verify → issue token | `{ status: "authenticated", token: "eyJpZ..." }` |
 | `token` | Validate saved token | `{ status: "authenticated" }` |
 
 ## Challenge Every Time (No Persistent Tokens)

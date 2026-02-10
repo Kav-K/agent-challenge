@@ -63,13 +63,13 @@ Agent                          Your API
   │                               │
   ├──POST { answer, token }─────►│
   │                               ├── gate() → correct!
-  │◄──200 { token: "at_7f3..." }──┤
+  │◄──200 { token: "eyJpZ..." }───┤
   │                               │
   │  ┌─────────────────────┐      │
   │  │ Saves token forever │      │
   │  └─────────────────────┘      │
   │                               │
-  ├──POST + Bearer at_7f3...────►│
+  ├──POST + Bearer eyJpZ...─────►│
   │                               ├── gate() → valid token
   │◄──200 { authenticated }───────┤   (instant, no puzzle)
 ```
@@ -137,7 +137,7 @@ One function handles everything. Three modes based on what's passed in:
 | Arguments | Behavior | Returns |
 |-----------|----------|---------|
 | *(none)* | Generate a new challenge | `{ status: "challenge_required", prompt, challenge_token }` |
-| `challenge_token` + `answer` | Verify answer, issue permanent token | `{ status: "authenticated", token: "at_..." }` |
+| `challenge_token` + `answer` | Verify answer, issue permanent token | `{ status: "authenticated", token: "eyJpZ..." }` |
 | `token` | Validate saved token | `{ status: "authenticated" }` |
 
 ```python
@@ -147,10 +147,10 @@ result = ac.gate()
 
 # Mode 2: Answer → permanent token
 result = ac.gate(challenge_token="eyJ...", answer="PYTHON")
-# → GateResult(status="authenticated", token="at_7f3b...")
+# → GateResult(status="authenticated", token="eyJpZCI6ImF0Xy...")
 
 # Mode 3: Token → instant pass
-result = ac.gate(token="at_7f3b...")
+result = ac.gate(token="eyJpZCI6ImF0Xy...")
 # → GateResult(status="authenticated")
 ```
 
@@ -189,10 +189,13 @@ Each type has 3–8 prompt templates with randomized phrasing, making regex-base
 Use an LLM to generate novel, never-before-seen challenges:
 
 ```python
-ac = AgentChallenge(
-    secret="your-secret",
-    dynamic=True,  # Requires OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY
-)
+ac = AgentChallenge(secret="your-secret")
+
+# Set an API key (or use OPENAI_API_KEY / ANTHROPIC_API_KEY / GOOGLE_API_KEY env vars)
+ac.set_openai_api_key("sk-...")
+
+# Enable dynamic mode
+ac.enable_dynamic_mode()  # Auto-detects provider from available keys
 ```
 
 Dynamic mode generates a challenge with one LLM call and verifies the answer with another. Falls back to static challenges after 3 failures. Supports OpenAI, Anthropic, and Google Gemini — auto-detected from environment variables.
@@ -220,12 +223,15 @@ This is useful for high-security endpoints, rate-limited operations, or when you
 ```python
 ac = AgentChallenge(
     secret="your-secret",       # Required — HMAC signing key (min 8 chars)
-    difficulty="medium",        # "easy" | "medium" | "hard" (default: "medium")
+    difficulty="medium",        # "easy" | "medium" | "hard" (default: "easy")
     ttl=300,                    # Challenge expiry in seconds (default: 300)
     types=["rot13", "caesar"],  # Restrict to specific challenge types
     persistent=True,            # Issue permanent tokens (default: True)
-    dynamic=False,              # Enable LLM-generated challenges
 )
+
+# Dynamic mode is enabled separately:
+# ac.set_openai_api_key("sk-...")
+# ac.enable_dynamic_mode()
 ```
 
 ## Token Architecture
@@ -270,7 +276,7 @@ result = ac.verify(token=challenge.token, answer="PYTHON")
 
 # Create a persistent agent token directly
 token = ac.create_token("agent-name")
-# token → "at_eyJpZCI6..."
+# token → "eyJpZCI6ImF0Xy..."  (base64url-encoded signed payload)
 
 # Verify a token
 ac.verify_token(token)  # → True
@@ -316,11 +322,11 @@ Document this pattern in your API's SKILL.md or agent docs, and any LLM-powered 
 ## Testing
 
 ```bash
-# Python (71 tests)
+# Python
 PYTHONPATH=src python3 run_tests.py
 
-# JavaScript (Node.js)
-node --test src/agentchallenge.test.js
+# JavaScript (syntax check)
+node --check src/agentchallenge.js
 ```
 
 ## Live Demo

@@ -324,7 +324,7 @@ class AgentChallenge:
                 return GateResult(status="error", error="Persistent tokens are disabled")
             if self.verify_token(token):
                 return GateResult(status="authenticated")
-            return GateResult(status="error", error="Invalid or expired token")
+            return GateResult(status="error", error="Invalid token")
 
         # Mode 2: Agent is submitting an answer to a challenge
         if challenge_token and answer:
@@ -501,7 +501,7 @@ def _hash_answer(answer: str) -> str:
 
 
 def _normalize_answer(answer: str) -> str:
-    """Normalize an answer for comparison: strip, lowercase, collapse whitespace."""
+    """Normalize an answer for comparison: strip, lowercase, canonicalize lists, collapse whitespace."""
     if not isinstance(answer, str):
         return ""
     # Strip whitespace, lowercase
@@ -509,6 +509,11 @@ def _normalize_answer(answer: str) -> str:
     # Remove surrounding quotes if present
     if len(s) >= 2 and s[0] == s[-1] and s[0] in ('"', "'"):
         s = s[1:-1].strip()
+    # Strip trailing punctuation (periods, exclamation, etc.) that agents often add
+    s = re.sub(r"[.!]+$", "", s).strip()
+    # Canonicalize comma-separated lists: "1, 2, 3" and "1,2,3" → "1, 2, 3"
+    if "," in s:
+        s = ", ".join(part.strip() for part in s.split(","))
     # Collapse multiple spaces
     s = re.sub(r"\s+", " ", s)
     return s
