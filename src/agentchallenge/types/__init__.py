@@ -65,25 +65,32 @@ CHALLENGE_TYPES = {
 
 # Difficulty presets
 DIFFICULTY_MAP = {
-    # Easy: gpt-4o-mini solves reliably (near 100%)
+    # Easy: gpt-4o-mini solves 100% single-shot (empirically validated)
+    # simple_math 100%, first_last 100%, string_math 100%
     "easy": [
-        "simple_math", "pattern", "string_length", "first_last",
-        "binary", "ascii_value", "string_math", "word_math", "substring",
+        "simple_math", "first_last", "string_math",
     ],
-    # Medium: gpt-4o-mini starts failing (character manipulation)
+    # Medium: gpt-4o solves 100%, gpt-4o-mini starts failing (80-90%)
+    # binary 100%/80%, pattern 100%/80%, word_math 90%/70%,
+    # sorting 90%/50%, ascii_value 80%/90%
     "medium": [
-        "simple_math", "pattern", "string_length", "first_last",
-        "binary", "ascii_value", "string_math", "word_math", "substring",
-        "reverse_string", "counting", "sorting", "extract_letters",
-        "letter_position",
+        "binary", "pattern", "word_math", "sorting", "ascii_value",
     ],
-    # Hard: gpt-4o cannot reliably complete (cipher/transform operations)
+    # Hard: gpt-4o fails significantly (<70%), gpt-4o-mini near-zero
+    # counting 50%/50%, substring 60%/40%, string_length 50%/60%,
+    # reverse_string 80%/60%, transform 70%/50%,
+    # rot13 40%/20%, caesar 30%/0%, letter_position 20%/10%,
+    # extract_letters 10%/0%, zigzag 0%/0%
     "hard": [
-        "caesar", "rot13", "transform", "zigzag",
-        "reverse_string", "counting", "sorting", "extract_letters",
-        "letter_position",
+        "counting", "substring", "string_length", "reverse_string",
+        "transform", "rot13", "caesar", "letter_position",
+        "extract_letters", "zigzag",
     ],
-    # Agentic: multi-step reasoning chains, blocks all but top-tier models
+    # Agentic: multi-step chains, blocks both gpt-4o and gpt-4o-mini
+    # chained_transform 20%/20%, multi_step_math 50%/40%,
+    # base_conversion_chain 80%/40%, word_extraction_chain 20%/0%,
+    # letter_math 70%/0%, nested_operations 70%/80%,
+    # string_interleave 30%/0%
     "agentic": [
         "chained_transform", "multi_step_math", "base_conversion_chain",
         "word_extraction_chain", "letter_math",

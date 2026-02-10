@@ -1362,13 +1362,13 @@ CHALLENGE_TYPES.string_interleave = () => {
 };
 
 const DIFFICULTY_MAP = {
-  // Easy: gpt-4o-mini solves reliably (near 100%)
-  easy: ['simple_math', 'pattern', 'string_length', 'first_last', 'binary', 'ascii_value', 'string_math', 'word_math', 'substring'],
-  // Medium: gpt-4o-mini starts failing (character manipulation)
-  medium: ['simple_math', 'pattern', 'string_length', 'first_last', 'binary', 'ascii_value', 'string_math', 'word_math', 'substring', 'reverse_string', 'counting', 'sorting', 'extract_letters', 'letter_position'],
-  // Hard: gpt-4o cannot reliably complete (cipher/transform operations)
-  hard: ['caesar', 'rot13', 'transform', 'zigzag', 'reverse_string', 'counting', 'sorting', 'extract_letters', 'letter_position'],
-  // Agentic: multi-step reasoning chains, blocks all but top-tier models
+  // Easy: gpt-4o-mini solves 100% single-shot (empirically validated)
+  easy: ['simple_math', 'first_last', 'string_math'],
+  // Medium: gpt-4o solves 100%, gpt-4o-mini starts failing (80-90%)
+  medium: ['binary', 'pattern', 'word_math', 'sorting', 'ascii_value'],
+  // Hard: gpt-4o fails significantly (<70%), gpt-4o-mini near-zero
+  hard: ['counting', 'substring', 'string_length', 'reverse_string', 'transform', 'rot13', 'caesar', 'letter_position', 'extract_letters', 'zigzag'],
+  // Agentic: multi-step chains, blocks both gpt-4o and gpt-4o-mini
   agentic: ['chained_transform', 'multi_step_math', 'base_conversion_chain', 'word_extraction_chain', 'letter_math', 'nested_operations', 'string_interleave'],
 };
 

@@ -1584,17 +1584,17 @@ def _():
 # ── Difficulty Tier Completeness ──────────────────────
 print("\n── Difficulty Tier Completeness ────────────────")
 
-@test("difficulty: easy tier has exactly 9 types")
+@test("difficulty: easy tier has exactly 3 types")
 def _():
-    assert len(DIFFICULTY_MAP["easy"]) == 9, f"Easy has {len(DIFFICULTY_MAP['easy'])} types, expected 9"
+    assert len(DIFFICULTY_MAP["easy"]) == 3, f"Easy has {len(DIFFICULTY_MAP['easy'])} types, expected 3"
 
-@test("difficulty: medium tier has exactly 14 types")
+@test("difficulty: medium tier has exactly 5 types")
 def _():
-    assert len(DIFFICULTY_MAP["medium"]) == 14, f"Medium has {len(DIFFICULTY_MAP['medium'])} types, expected 14"
+    assert len(DIFFICULTY_MAP["medium"]) == 5, f"Medium has {len(DIFFICULTY_MAP['medium'])} types, expected 5"
 
-@test("difficulty: hard tier has exactly 9 types")
+@test("difficulty: hard tier has exactly 10 types")
 def _():
-    assert len(DIFFICULTY_MAP["hard"]) == 9, f"Hard has {len(DIFFICULTY_MAP['hard'])} types, expected 9"
+    assert len(DIFFICULTY_MAP["hard"]) == 10, f"Hard has {len(DIFFICULTY_MAP['hard'])} types, expected 10"
 
 @test("difficulty: agentic tier has exactly 7 types")
 def _():

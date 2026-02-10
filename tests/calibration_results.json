@@ -1,0 +1,804 @@
+{
+  "gpt-4o-mini": {
+    "ascii_value": {
+      "correct": 9,
+      "total": 10,
+      "pct": 90.0,
+      "failures": [
+        {
+          "prompt": "Find the sum of ASCII codes for each character in \"RWEA\". Respond with just the ",
+          "expected": "?",
+          "got": "272"
+        }
+      ]
+    },
+    "binary": {
+      "correct": 8,
+      "total": 10,
+      "pct": 80.0,
+      "failures": [
+        {
+          "prompt": "Compute the sum of each digit in the number 76634. Your response should contain ",
+          "expected": "?",
+          "got": "27"
+        },
+        {
+          "prompt": "Compute the sum of all single digits in 61113. Give me only the answer.",
+          "expected": "?",
+          "got": "16"
+        }
+      ]
+    },
+    "caesar": {
+      "correct": 0,
+      "total": 10,
+      "pct": 0.0,
+      "failures": [
+        {
+          "prompt": "Undo a Caesar shift of 3 on this text: OHBHAR Reply with ONLY the answer, nothin",
+          "expected": "?",
+          "got": "LEAVE"
+        },
+        {
+          "prompt": "The cipher text is XTRTN, encoded with a shift of 11. What was the original mess",
+          "expected": "?",
+          "got": "MIGGY"
+        },
+        {
+          "prompt": "Caesar decode IGPQOGZ with shift=2. Move each letter 2 places back in the alphab",
+          "expected": "?",
+          "got": "EFOQMEX"
+        }
+      ]
+    },
+    "counting": {
+      "correct": 5,
+      "total": 10,
+      "pct": 50.0,
+      "failures": [
+        {
+          "prompt": "For the string \"YVJPBDYYYUUHYN\", how many times is \"Y\" present? Output just the ",
+          "expected": "?",
+          "got": "6"
+        },
+        {
+          "prompt": "Go through \"BLSOZV\" and count only the consonants. Write only the final answer.",
+          "expected": "?",
+          "got": "4"
+        },
+        {
+          "prompt": "Go through \"ZQGDBK\" and count only the consonants. Output just the answer, no ex",
+          "expected": "?",
+          "got": "5"
+        }
+      ]
+    },
+    "extract_letters": {
+      "correct": 0,
+      "total": 10,
+      "pct": 0.0,
+      "failures": [
+        {
+          "prompt": "From IZISLQZFM, extract characters at positions 1, 3, 5, 7, and so on. Respond w",
+          "expected": "?",
+          "got": "IZLQM"
+        },
+        {
+          "prompt": "From VGHSBVZPPC, pick out characters at indices 0, 3, 6, 9... Reply with ONLY th",
+          "expected": "?",
+          "got": "VGBZP"
+        },
+        {
+          "prompt": "Extract every 2nd letter from this string, starting from the 1st character: HHVD",
+          "expected": "?",
+          "got": "VDGNT"
+        }
+      ]
+    },
+    "first_last": {
+      "correct": 10,
+      "total": 10,
+      "pct": 100.0,
+      "failures": []
+    },
+    "letter_position": {
+      "correct": 1,
+      "total": 10,
+      "pct": 10.0,
+      "failures": [
+        {
+          "prompt": "In \"AKS\", each letter has a value equal to its position in the alphabet. What is",
+          "expected": "?",
+          "got": "36"
+        },
+        {
+          "prompt": "Assign each letter a number (A=1, B=2, through Z=26). Add up the values of all l",
+          "expected": "?",
+          "got": "50"
+        },
+        {
+          "prompt": "Map each letter to its alphabet position (A=1 through Z=26) and find the total f",
+          "expected": "?",
+          "got": "36"
+        }
+      ]
+    },
+    "pattern": {
+      "correct": 8,
+      "total": 10,
+      "pct": 80.0,
+      "failures": [
+        {
+          "prompt": "Extend this series by one: 10, 12, 16, 22, 30, ? Just the answer please, nothing",
+          "expected": "?",
+          "got": "42"
+        },
+        {
+          "prompt": "What is the next term in this sequence: 1, 4, 5, 9, 14, ? Reply with ONLY the an",
+          "expected": "?",
+          "got": "22"
+        }
+      ]
+    },
+    "reverse_string": {
+      "correct": 6,
+      "total": 10,
+      "pct": 60.0,
+      "failures": [
+        {
+          "prompt": "Read S0C3V4 from right to left and write what you see. Answer with a single valu",
+          "expected": "?",
+          "got": "V4C3OS"
+        },
+        {
+          "prompt": "Write VEDOWU in reverse (last character first). Respond with just the answer.",
+          "expected": "?",
+          "got": "UOWDEV"
+        },
+        {
+          "prompt": "Take RILIHEXAN and write it back-to-front. Just the answer please, nothing more.",
+          "expected": "?",
+          "got": "NAXIHELIR"
+        }
+      ]
+    },
+    "rot13": {
+      "correct": 2,
+      "total": 10,
+      "pct": 20.0,
+      "failures": [
+        {
+          "prompt": "Each letter in KNXBLN was shifted 13 places forward. Shift them back to decode. ",
+          "expected": "?",
+          "got": "AXEYOA"
+        },
+        {
+          "prompt": "Reverse the ROT13 encoding of: FBMBDH Just the answer please, nothing more.",
+          "expected": "?",
+          "got": "OSZOQU"
+        },
+        {
+          "prompt": "What does SHTBI say when you undo the ROT13 encoding? Give me only the answer.",
+          "expected": "?",
+          "got": "FGUOV"
+        }
+      ]
+    },
+    "simple_math": {
+      "correct": 10,
+      "total": 10,
+      "pct": 100.0,
+      "failures": []
+    },
+    "sorting": {
+      "correct": 5,
+      "total": 10,
+      "pct": 50.0,
+      "failures": [
+        {
+          "prompt": "List the letters of HOPDNJK sorted in descending order. Give me only the answer.",
+          "expected": "?",
+          "got": "PNKJHOD"
+        },
+        {
+          "prompt": "Sort from minimum to maximum: 96, 33, 34, 3, 8, 16, 19 Answer with a single valu",
+          "expected": "?",
+          "got": "3"
+        },
+        {
+          "prompt": "Sort in descending order: 96, 99, 70, 49, 50, 51 Answer with a single value only",
+          "expected": "?",
+          "got": "99"
+        }
+      ]
+    },
+    "string_length": {
+      "correct": 6,
+      "total": 10,
+      "pct": 60.0,
+      "failures": [
+        {
+          "prompt": "Count the occurrences of \"F\" in \"MDKLMFIF\". Just the answer please, nothing more",
+          "expected": "?",
+          "got": "3"
+        },
+        {
+          "prompt": "Ignoring spaces, what is the character count of \"QYN TPLBVQ\"? Write only the fin",
+          "expected": "?",
+          "got": "8"
+        },
+        {
+          "prompt": "What is the frequency of \"L\" in the string \"VPKMLELSO\"? Output just the answer, ",
+          "expected": "?",
+          "got": "3"
+        }
+      ]
+    },
+    "string_math": {
+      "correct": 10,
+      "total": 10,
+      "pct": 100.0,
+      "failures": []
+    },
+    "substring": {
+      "correct": 4,
+      "total": 10,
+      "pct": 40.0,
+      "failures": [
+        {
+          "prompt": "What substring do you get from positions 11 to 13 of \"HTTIUYRAAIFGJ\"? Answer wit",
+          "expected": "?",
+          "got": "RAA"
+        },
+        {
+          "prompt": "Find the position of the first occurrence of \"P\" in \"MZBGMNLKGYIPI\" (1-indexed).",
+          "expected": "?",
+          "got": "10"
+        },
+        {
+          "prompt": "Extract characters at positions 6 to 8 from \"BYPSFACBES\". Output just the answer",
+          "expected": "?",
+          "got": "FAC"
+        }
+      ]
+    },
+    "transform": {
+      "correct": 5,
+      "total": 10,
+      "pct": 50.0,
+      "failures": [
+        {
+          "prompt": "Extract the terminal letter from each word in \"Prifv Ygsgwb Niwc Kipijm Qbr Uznz",
+          "expected": "?",
+          "got": "bggmNwzQz"
+        },
+        {
+          "prompt": "What is the acronym for \"Qgpvoo Vncbh Qbl Cdgrlvq\"? Reply with ONLY the answer, ",
+          "expected": "?",
+          "got": "QVQCD"
+        },
+        {
+          "prompt": "Strip out all consonants from \"RTIPQHMKK\", keeping only A, E, I, O, U. Just the ",
+          "expected": "?",
+          "got": ""
+        }
+      ]
+    },
+    "word_math": {
+      "correct": 7,
+      "total": 10,
+      "pct": 70.0,
+      "failures": [
+        {
+          "prompt": "Go through \"GPTJHPQVN\" and count all vowels. Write only the final answer.",
+          "expected": "?",
+          "got": "2"
+        },
+        {
+          "prompt": "In the text \"PPUKQROAJ\", how many letters are vowels (A, E, I, O, U)? Reply with",
+          "expected": "?",
+          "got": "1"
+        },
+        {
+          "prompt": "Go through \"NCRRCYKGF\" and count all vowels. Your response should contain nothin",
+          "expected": "?",
+          "got": "2"
+        }
+      ]
+    },
+    "zigzag": {
+      "correct": 0,
+      "total": 10,
+      "pct": 0.0,
+      "failures": [
+        {
+          "prompt": "Place characters of \"YHDTQOJG\" in a 2-row zigzag and read across. Write only the",
+          "expected": "?",
+          "got": "YHGOJTDQ"
+        },
+        {
+          "prompt": "Rearrange \"LSVJXZL\" using a rail fence with 2 rails. What do you get? Give me on",
+          "expected": "?",
+          "got": "LJZVSLX"
+        },
+        {
+          "prompt": "Write \"INWNGZEL\" in a zigzag pattern with 2 rows, then read each row left to rig",
+          "expected": "?",
+          "got": "INZELWNG"
+        }
+      ]
+    },
+    "base_conversion_chain": {
+      "correct": 2,
+      "total": 5,
+      "pct": 40.0
+    },
+    "chained_transform": {
+      "correct": 1,
+      "total": 5,
+      "pct": 20.0
+    },
+    "letter_math": {
+      "correct": 0,
+      "total": 5,
+      "pct": 0.0
+    },
+    "multi_step_math": {
+      "correct": 2,
+      "total": 5,
+      "pct": 40.0
+    },
+    "nested_operations": {
+      "correct": 4,
+      "total": 5,
+      "pct": 80.0
+    },
+    "string_interleave": {
+      "correct": 0,
+      "total": 5,
+      "pct": 0.0
+    },
+    "word_extraction_chain": {
+      "correct": 0,
+      "total": 5,
+      "pct": 0.0
+    }
+  },
+  "gpt-4o": {
+    "ascii_value": {
+      "correct": 8,
+      "total": 10,
+      "pct": 80.0,
+      "failures": [
+        {
+          "prompt": "Calculate the total ASCII value of the string \"VME\". Reply with ONLY the answer,",
+          "expected": "?",
+          "got": "222"
+        },
+        {
+          "prompt": "Calculate the total ASCII value of the string \"FEAJY\". Output just the answer, n",
+          "expected": "?",
+          "got": "365"
+        }
+      ]
+    },
+    "base_conversion_chain": {
+      "correct": 8,
+      "total": 10,
+      "pct": 80.0,
+      "failures": [
+        {
+          "prompt": "I need you to convert binary 100000 to decimal, add 15, then convert the result ",
+          "expected": "?",
+          "got": "100111"
+        },
+        {
+          "prompt": "Challenge: Convert binary 100101 to decimal, add 15, then convert the result bac",
+          "expected": "?",
+          "got": "111110"
+        }
+      ]
+    },
+    "binary": {
+      "correct": 10,
+      "total": 10,
+      "pct": 100.0,
+      "failures": []
+    },
+    "caesar": {
+      "correct": 3,
+      "total": 10,
+      "pct": 30.0,
+      "failures": [
+        {
+          "prompt": "Each letter in CMBQJ was shifted forward by 12. Reverse the shift to decode. Jus",
+          "expected": "?",
+          "got": "QAZYN"
+        },
+        {
+          "prompt": "Given the Caesar-encrypted text AEGEJSX (shift 10), determine the plaintext. Giv",
+          "expected": "?",
+          "got": "QUTOYIN"
+        },
+        {
+          "prompt": "Reverse a 7-step Caesar cipher on NLMHDH. What do you get? Write only the final ",
+          "expected": "?",
+          "got": "GEFMAX"
+        }
+      ]
+    },
+    "chained_transform": {
+      "correct": 2,
+      "total": 10,
+      "pct": 20.0,
+      "failures": [
+        {
+          "prompt": "Quick task \u2014 reverse \"HRQucqzaky\", then remove all vowels (A, E, I, O, U) from t",
+          "expected": "?",
+          "got": "ykzcquQRH"
+        },
+        {
+          "prompt": "Please apply ROT13 to \"LkAsmtJ\", then reverse the result. (Session dbc4231225) R",
+          "expected": "?",
+          "got": "WqNfzGv"
+        },
+        {
+          "prompt": "Apply ROT13 to \"GROkSrIB\", then remove all consonants, keeping only vowels. (tim",
+          "expected": "?",
+          "got": "BIV"
+        }
+      ]
+    },
+    "counting": {
+      "correct": 5,
+      "total": 10,
+      "pct": 50.0,
+      "failures": [
+        {
+          "prompt": "How many UPPERCASE letters are in \"JWrPksUXdaQRN\"? Respond with just the answer.",
+          "expected": "?",
+          "got": "9"
+        },
+        {
+          "prompt": "Tell me the number of capital letters in \"cnHmgaeTHeW\". Output just the answer, ",
+          "expected": "?",
+          "got": "6"
+        },
+        {
+          "prompt": "Tell me the count of \"X\" in the string \"OQWAJUXDQXQOXMJNXX\". Write only the fina",
+          "expected": "?",
+          "got": "4"
+        }
+      ]
+    },
+    "extract_letters": {
+      "correct": 1,
+      "total": 10,
+      "pct": 10.0,
+      "failures": [
+        {
+          "prompt": "From DCVKXDLFTG, pick out characters at indices 0, 3, 6, 9... Reply with ONLY th",
+          "expected": "?",
+          "got": "DVL"
+        },
+        {
+          "prompt": "Extract characters at indices 0, 2, 4, 6... from the string AZTSZCILU. Write onl",
+          "expected": "?",
+          "got": "ATSIL"
+        },
+        {
+          "prompt": "Read the 1st character of RCDQDJRLMXDLQ, then every 3rd one after that. Write on",
+          "expected": "?",
+          "got": "RDRLXQ"
+        }
+      ]
+    },
+    "first_last": {
+      "correct": 10,
+      "total": 10,
+      "pct": 100.0,
+      "failures": []
+    },
+    "letter_math": {
+      "correct": 7,
+      "total": 10,
+      "pct": 70.0,
+      "failures": [
+        {
+          "prompt": "Your task: Letter positions: A=1 through Z=26. Sum the letter values of all char",
+          "expected": "?",
+          "got": "55"
+        },
+        {
+          "prompt": "Challenge: Given that each letter has a numeric value (A=1, B=2, ... Z=26): Add ",
+          "expected": "?",
+          "got": "64"
+        },
+        {
+          "prompt": "Given that each letter has a numeric value (A=1, B=2, ... Z=26): Sum the letter ",
+          "expected": "?",
+          "got": "70"
+        }
+      ]
+    },
+    "letter_position": {
+      "correct": 2,
+      "total": 10,
+      "pct": 20.0,
+      "failures": [
+        {
+          "prompt": "Compute the alphabet-position total for \"HCB\" (A=1 through Z=26). Your response ",
+          "expected": "?",
+          "got": "16"
+        },
+        {
+          "prompt": "If each letter equals its position (A=1, B=2, ..., Z=26), what is the total for ",
+          "expected": "?",
+          "got": "78"
+        },
+        {
+          "prompt": "Compute the alphabet-position total for \"CVJ\" (A=1 through Z=26). Respond with j",
+          "expected": "?",
+          "got": "46"
+        }
+      ]
+    },
+    "multi_step_math": {
+      "correct": 5,
+      "total": 10,
+      "pct": 50.0,
+      "failures": [
+        {
+          "prompt": "Add 39 and 24, then find the remainder when divided by 11. Type a single value o",
+          "expected": "?",
+          "got": "5"
+        },
+        {
+          "prompt": "Respond with ONLY the answer. That's it. Add 17 and 22, then find the remainder ",
+          "expected": "?",
+          "got": "3"
+        },
+        {
+          "prompt": "Here's a puzzle: Multiply 28 by 28, then find the digit sum of the result. Answe",
+          "expected": "?",
+          "got": "16"
+        }
+      ]
+    },
+    "nested_operations": {
+      "correct": 7,
+      "total": 10,
+      "pct": 70.0,
+      "failures": [
+        {
+          "prompt": "Your task: What is ((6 + 3 + 7) \u00d7 3) - 2? Write nothing but the answer, nothing ",
+          "expected": "?",
+          "got": "40"
+        },
+        {
+          "prompt": "Challenge: What is ((19 + 11) \u00d7 2) - 25? Return ONLY the answer. Just that.",
+          "expected": "?",
+          "got": "25"
+        },
+        {
+          "prompt": "Complete this: What is ((16 + 6) \u00d7 3) - 27? (timestamp: 03:26:24) Give me nothin",
+          "expected": "?",
+          "got": "33"
+        }
+      ]
+    },
+    "pattern": {
+      "correct": 10,
+      "total": 10,
+      "pct": 100.0,
+      "failures": []
+    },
+    "reverse_string": {
+      "correct": 8,
+      "total": 10,
+      "pct": 80.0,
+      "failures": [
+        {
+          "prompt": "Invert the character order of ONASUHD. Just the answer please, nothing more.",
+          "expected": "?",
+          "got": "DHUSAON"
+        },
+        {
+          "prompt": "Spell LF3X1 backwards. Write only the final answer.",
+          "expected": "?",
+          "got": "1XF3L"
+        }
+      ]
+    },
+    "rot13": {
+      "correct": 4,
+      "total": 10,
+      "pct": 40.0,
+      "failures": [
+        {
+          "prompt": "This string has been ROT13-encoded: LRQRC. What is the decoded version? Write on",
+          "expected": "?",
+          "got": "YEDRP"
+        },
+        {
+          "prompt": "Rotate every letter in ZBSBJBI by 13 positions to decode it. Respond with just t",
+          "expected": "?",
+          "got": "OMFOWOV"
+        },
+        {
+          "prompt": "The text GBPRJ was scrambled with ROT13. Unscramble it. Reply with ONLY the answ",
+          "expected": "?",
+          "got": "TOCWE"
+        }
+      ]
+    },
+    "simple_math": {
+      "correct": 10,
+      "total": 10,
+      "pct": 100.0,
+      "failures": []
+    },
+    "sorting": {
+      "correct": 9,
+      "total": 10,
+      "pct": 90.0,
+      "failures": [
+        {
+          "prompt": "Give me AQISO sorted from Z to A. Write only the final answer.",
+          "expected": "?",
+          "got": "SOQIA"
+        }
+      ]
+    },
+    "string_interleave": {
+      "correct": 3,
+      "total": 10,
+      "pct": 30.0,
+      "failures": [
+        {
+          "prompt": "Give me the answer alone, nothing else. Complete this: Interleave \"NTPVR\" and \"U",
+          "expected": "?",
+          "got": "LYRKVHUPNT"
+        },
+        {
+          "prompt": "I need you to interleave \"NBBT\" and \"WBFX\" character by character, then reverse ",
+          "expected": "?",
+          "got": "XFTBBWN"
+        },
+        {
+          "prompt": "Complete this: Interleave \"RLSI\" and \"RAIB\" character by character, then reverse",
+          "expected": "?",
+          "got": "BIRALISR"
+        }
+      ]
+    },
+    "string_length": {
+      "correct": 5,
+      "total": 10,
+      "pct": 50.0,
+      "failures": [
+        {
+          "prompt": "Ignoring spaces, what is the character count of \"VFQUG ZUH YFD ATH\"? Output just",
+          "expected": "?",
+          "got": "15"
+        },
+        {
+          "prompt": "In \"DJAKM JIKAG ZGBMVY OUA\", how many characters are there excluding spaces? Giv",
+          "expected": "?",
+          "got": "17"
+        },
+        {
+          "prompt": "Ignoring spaces, what is the character count of \"RYKR UKXTZA PEPY XHK\"? Your res",
+          "expected": "?",
+          "got": "18"
+        }
+      ]
+    },
+    "string_math": {
+      "correct": 10,
+      "total": 10,
+      "pct": 100.0,
+      "failures": []
+    },
+    "substring": {
+      "correct": 6,
+      "total": 10,
+      "pct": 60.0,
+      "failures": [
+        {
+          "prompt": "What substring do you get from positions 5 to 6 of \"SIXHEPAA\"? Write only the fi",
+          "expected": "?",
+          "got": "HE"
+        },
+        {
+          "prompt": "What are characters 7 through 11 of \"VXFDFFXUPVFKM\"? (1-indexed) Give me only th",
+          "expected": "?",
+          "got": "FXUPV"
+        },
+        {
+          "prompt": "Pull out characters 4\u20136 from the string \"NHDQNMCO\". Write only the final answer.",
+          "expected": "?",
+          "got": "DQN"
+        }
+      ]
+    },
+    "transform": {
+      "correct": 7,
+      "total": 10,
+      "pct": 70.0,
+      "failures": [
+        {
+          "prompt": "Build a string from the last letters of each word in \"Yifuba Gskzmk Bgiu Bnb Cvv",
+          "expected": "?",
+          "got": "akuees"
+        },
+        {
+          "prompt": "Take the final letter of each word in \"Dtw Lxpvmc Wxjnaq Vzh\" and combine them. ",
+          "expected": "?",
+          "got": "wcaq"
+        },
+        {
+          "prompt": "Collect the final character of every word in \"Wsn Hwhec Mjx Iqnpt Cdvs\" and comb",
+          "expected": "?",
+          "got": "ncxst"
+        }
+      ]
+    },
+    "word_extraction_chain": {
+      "correct": 2,
+      "total": 10,
+      "pct": 20.0,
+      "failures": [
+        {
+          "prompt": "Type ONLY the answer\u2014 no explanation. Take the first letter of each word in \"Had",
+          "expected": "?",
+          "got": "F, F, G, H, M, N, T, W"
+        },
+        {
+          "prompt": "Your task: Extract the 2nd letter from each word in \"Mukilop Mahexapo Susagef Ki",
+          "expected": "?",
+          "got": "ukahuea"
+        },
+        {
+          "prompt": "Challenge: Take the first letter of each word in \"Jaye Boruhuro Gemamufu Wope Na",
+          "expected": "?",
+          "got": "SWNWGJB"
+        }
+      ]
+    },
+    "word_math": {
+      "correct": 9,
+      "total": 10,
+      "pct": 90.0,
+      "failures": [
+        {
+          "prompt": "Find the number of vowels (A, E, I, O, U) in \"BFIGDBLB\". Respond with just the a",
+          "expected": "?",
+          "got": "0"
+        }
+      ]
+    },
+    "zigzag": {
+      "correct": 0,
+      "total": 10,
+      "pct": 0.0,
+      "failures": [
+        {
+          "prompt": "For the string \"XOFRXF\", perform a 2-row rail fence cipher encode. Reply with ON",
+          "expected": "?",
+          "got": "XFXOFR"
+        },
+        {
+          "prompt": "Rail fence cipher: encode \"BNKIQPIZLFIO\" using 3 rows. Give the result. Your res",
+          "expected": "?",
+          "got": "BIPZIKNQFILO"
+        },
+        {
+          "prompt": "Apply the rail fence cipher to \"GAVZPFGT\" with 2 rails. What is the result? Give",
+          "expected": "?",
+          "got": "GZPFTAV."
+        }
+      ]
+    }
+  }
+}

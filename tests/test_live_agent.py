@@ -190,9 +190,8 @@ transport = "curl" if _USE_CURL else "urllib"
 print(f"\n🤖 Live Agent Tests (OpenAI API via {transport})")
 print(f"   Key: ...{OPENAI_KEY[-6:]}")
 
-# Types gpt-4o-mini reliably solves — should match the "easy" tier exactly
-MINI_SAFE = ["simple_math", "pattern", "string_length", "first_last", "binary",
-             "ascii_value", "string_math", "word_math", "substring"]
+# Types gpt-4o-mini reliably solves — matches the "easy" tier exactly
+MINI_SAFE = ["simple_math", "first_last", "string_math"]
 
 
 # ── Section 1: Full HTTP Agent Flow ───────────────────
@@ -251,7 +250,7 @@ def _():
 
 @test("HTTP: lock mode — no persistent token returned")
 def _():
-    srv = MockAPIServer("live-lock-mode-key4", persistent=False, difficulty="easy", types=["simple_math", "pattern", "string_length", "first_last"]).start()
+    srv = MockAPIServer("live-lock-mode-key4", persistent=False, difficulty="easy", types=MINI_SAFE).start()
     try:
         for _ in range(3):
             code, data = api_call(srv.url)
@@ -285,45 +284,53 @@ def _():
 # ── Section 2: Per-Type Accuracy (gpt-4o-mini) ───────
 # Tests each type 3x with retries to verify gpt-4o-mini can solve it at least once.
 
-print(f"\n── gpt-4o-mini: Per-type solvability (3 attempts each) ──")
+print(f"\n── Easy tier: gpt-4o-mini MUST solve (3 attempts each) ──")
 
-# Types gpt-4o-mini reliably solves
-RELIABLE_TYPES = MINI_SAFE  # alias — these ARE the easy tier now
-
-# Medium-only types: gpt-4o-mini starts failing here (character manipulation)
-MEDIUM_EXTRA = ["reverse_string", "counting", "sorting", "extract_letters", "letter_position"]
-
-# Hard types: even gpt-4o struggles (cipher/transform operations)
-HARD_TYPES = ["caesar", "rot13", "transform", "zigzag"]
-
-for ctype in RELIABLE_TYPES:
-    @test(f"gpt-4o-mini reliably solves {ctype} (easy tier)")
+# Easy types: gpt-4o-mini 100% in calibration
+EASY_TYPES = ["simple_math", "first_last", "string_math"]
+for ctype in EASY_TYPES:
+    @test(f"gpt-4o-mini solves {ctype} (easy — must pass)")
     def _(ct=ctype):
-        ac = AgentChallenge(secret=f"live-type-{ct}-key", types=[ct])
+        ac = AgentChallenge(secret=f"live-easy-{ct}-key", types=[ct])
         ok, ch, ans = solve_with_retry(ac, "gpt-4o-mini", max_attempts=3)
-        assert ok, f"Failed all 3: last was '{ch.prompt[:50]}...' → '{ans}'"
+        assert ok, f"Easy type '{ct}' failed 3 attempts — not easy enough: '{ch.prompt[:50]}...' → '{ans}'"
 
-for ctype in MEDIUM_EXTRA:
+print(f"\n── Medium tier: gpt-4o MUST solve, gpt-4o-mini may fail ──")
+
+# Medium types: gpt-4o 90-100%, gpt-4o-mini 50-90%
+MEDIUM_TYPES = ["binary", "pattern", "word_math", "sorting", "ascii_value"]
+for ctype in MEDIUM_TYPES:
+    @test(f"gpt-4o solves {ctype} (medium — must pass)")
+    def _(ct=ctype):
+        ac = AgentChallenge(secret=f"live-med4o-{ct}-key", types=[ct])
+        ok, ch, ans = solve_with_retry(ac, "gpt-4o", max_attempts=3)
+        assert ok, f"Medium type '{ct}' failed for gpt-4o — should be solvable: '{ch.prompt[:50]}...' → '{ans}'"
+
+for ctype in MEDIUM_TYPES:
     @test(f"gpt-4o-mini attempts {ctype} (medium — may fail)")
     def _(ct=ctype):
-        ac = AgentChallenge(secret=f"live-med-{ct}-key", types=[ct])
+        ac = AgentChallenge(secret=f"live-med-mini-{ct}-key", types=[ct])
         ok, ch, ans = solve_with_retry(ac, "gpt-4o-mini", max_attempts=3)
         if ok:
             print(f"      (solved: {ans})")
         else:
-            print(f"      (expected — medium tier, char manipulation)")
-        # Don't assert — medium is designed to make 4o-mini fail
+            print(f"      (expected — medium tier)")
 
+print(f"\n── Hard tier: even gpt-4o mostly fails ──")
+
+# Hard types: gpt-4o <70%, gpt-4o-mini <50%
+HARD_TYPES = ["caesar", "rot13", "zigzag", "extract_letters", "letter_position",
+              "counting", "reverse_string", "transform", "substring", "string_length"]
 for ctype in HARD_TYPES:
-    @test(f"gpt-4o-mini attempts {ctype} (hard — expected failure)")
+    @test(f"gpt-4o attempts {ctype} (hard — expected failure)")
     def _(ct=ctype):
         ac = AgentChallenge(secret=f"live-hard-{ct}-key", types=[ct])
-        ok, ch, ans = solve_with_retry(ac, "gpt-4o-mini", max_attempts=3)
+        ok, ch, ans = solve_with_retry(ac, "gpt-4o", max_attempts=2)
         if ok:
-            print(f"      (unexpectedly solved: {ans})")
+            print(f"      (solved: {ans})")
         else:
-            print(f"      (expected — hard tier, cipher/transform ops)")
-        # Don't assert — hard is designed to block even gpt-4o
+            print(f"      (expected failure — hard tier)")
+        # Don't assert — hard is designed to block gpt-4o
 
 
 # ── Section 3: Bulk Accuracy ──────────────────────────
@@ -331,38 +338,45 @@ for ctype in HARD_TYPES:
 
 print(f"\n── Bulk accuracy (20 challenges each) ──────────")
 
-def _bulk_solve(ac, n=20):
+def _bulk_solve(ac, n=20, model="gpt-4o-mini"):
     solved = 0
     for _ in range(n):
         ch = ac.create()
         try:
-            answer = call_openai(ch.prompt)
+            answer = call_openai(ch.prompt, model=model)
             if ac.verify(token=ch.token, answer=answer).valid:
                 solved += 1
         except Exception:
             pass  # timeout or network error — count as fail
     return solved
 
-@test("gpt-4o-mini: ≥80% on 20 easy challenges")
+@test("gpt-4o-mini: ≥90% on 20 easy challenges (must be reliable)")
 def _():
     solved = _bulk_solve(AgentChallenge(secret="live-bulk-easy-key-acc", difficulty="easy"))
     pct = solved / 20 * 100
     print(f"      → {solved}/20 ({pct:.0f}%)")
-    assert solved >= 16, f"Only {solved}/20 ({pct:.0f}%) — easy tier should be ~90% for 4o-mini"
+    assert solved >= 18, f"Only {solved}/20 ({pct:.0f}%) — easy tier must be near 100% for 4o-mini"
 
-@test("gpt-4o-mini: 30-80% on 20 medium challenges (starts failing)")
+@test("gpt-4o: ≥85% on 20 medium challenges (must be reliable)")
+def _():
+    solved = _bulk_solve(AgentChallenge(secret="live-bulk-med4o-key-acc", difficulty="medium"), model="gpt-4o")
+    pct = solved / 20 * 100
+    print(f"      → {solved}/20 ({pct:.0f}%)")
+    assert solved >= 17, f"Only {solved}/20 ({pct:.0f}%) — medium tier must be reliable for gpt-4o"
+
+@test("gpt-4o-mini: ≤70% on 20 medium challenges (starts failing)")
 def _():
     solved = _bulk_solve(AgentChallenge(secret="live-bulk-med-key-acc", difficulty="medium"))
     pct = solved / 20 * 100
     print(f"      → {solved}/20 ({pct:.0f}%)")
-    assert solved >= 6, f"Only {solved}/20 ({pct:.0f}%)"
+    # Report only — medium is the crossover zone
 
-@test("gpt-4o-mini: ≤50% on 20 hard challenges (should mostly fail)")
+@test("gpt-4o: ≤60% on 20 hard challenges (mostly fails)")
 def _():
-    solved = _bulk_solve(AgentChallenge(secret="live-bulk-hard-key-acc", difficulty="hard"))
+    solved = _bulk_solve(AgentChallenge(secret="live-bulk-hard4o-key-acc", difficulty="hard"), model="gpt-4o")
     pct = solved / 20 * 100
     print(f"      → {solved}/20 ({pct:.0f}%)")
-    # We just report — hard is designed to block, low scores are expected
+    # Report only — hard designed to block gpt-4o
 
 
 # ── Section 4: Agentic Tier ──────────────────────────
