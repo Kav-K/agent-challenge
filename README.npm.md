@@ -104,6 +104,21 @@ When `persistent: false`:
 - Passing a saved token returns an error
 - Every request requires solving a new puzzle
 
+## Agent-Only Mode (Block Humans)
+
+Tight time limit + hard difficulty = only AI agents can pass:
+
+```javascript
+const ac = new AgentChallenge({
+  secret: 'your-secret',
+  difficulty: 'hard',     // caesar, word_math, transform
+  ttl: 10,                // 10 seconds — humans can't
+  persistent: false,      // challenge every request
+});
+```
+
+A human can't decode a caesar cipher in 10 seconds. An LLM does it in under 2.
+
 ## Configuration
 
 ```javascript

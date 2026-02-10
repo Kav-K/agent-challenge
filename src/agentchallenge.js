@@ -546,7 +546,7 @@ export class AgentChallenge {
    * @param {Object} opts
    * @param {string} opts.secret - Server secret key for signing tokens (min 8 chars)
    * @param {string} [opts.difficulty='easy'] - "easy", "medium", or "hard"
-   * @param {number} [opts.ttl=300] - Challenge TTL in seconds
+   * @param {number} [opts.ttl=300] - Challenge TTL in seconds. Set low (10-15s) to block humans entirely.
    * @param {string[]} [opts.types] - Optional list of allowed challenge types
    * @param {boolean} [opts.persistent=true] - Issue persistent tokens (false = challenge every time)
    */

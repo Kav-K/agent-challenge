@@ -218,6 +218,26 @@ When `persistent=False`:
 
 This is useful for high-security endpoints, rate-limited operations, or when you want proof of LLM capability on every call.
 
+## Agent-Only Mode (Block Humans)
+
+Combine a tight time limit with hard difficulty to create endpoints that **only AI agents can access**. A human can't read a caesar cipher, decode it mentally, and type the answer in 10 seconds — but an LLM handles it in under 2.
+
+```python
+ac = AgentChallenge(
+    secret="your-secret",
+    difficulty="hard",      # caesar, word_math, transform
+    ttl=10,                 # 10 seconds — impossible for humans
+    persistent=False,       # challenge every request
+)
+```
+
+This is useful for:
+- **Agent-to-agent APIs** where human access is unwanted
+- **Internal tooling** that should only be called by AI systems
+- **Preventing manual API abuse** even by authenticated users with the endpoint URL
+
+The `ttl` parameter controls how long an agent has to solve the challenge after it's issued. At `difficulty="hard"` with `ttl=10`, the challenge requires genuine LLM reasoning (not just string reversal) and must be solved faster than any human could manage.
+
 ## Configuration
 
 ```python

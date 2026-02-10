@@ -113,10 +113,18 @@ class AgentChallenge:
 
     Supported providers: OpenAI, Anthropic, Google Gemini.
 
+    ## Blocking Humans (Agent-Only Mode)
+    Combine a short TTL with hard difficulty to create an endpoint that only
+    AI agents can access. A human can't read, reason about, and type an answer
+    to a caesar cipher in 10 seconds — but an LLM handles it in under 2.
+
+        ac = AgentChallenge(secret="...", difficulty="hard", ttl=10)
+
     Args:
         secret: Server secret key for signing tokens (min 8 chars).
         difficulty: "easy", "medium", or "hard". Controls which challenge types are used.
         ttl: Challenge time-to-live in seconds (default 300 = 5 minutes).
+            Set low (e.g. 10-15s) to block humans entirely — only fast AI agents can solve in time.
         types: Optional list of challenge type names to use. If None, uses difficulty-based selection.
     """
 
