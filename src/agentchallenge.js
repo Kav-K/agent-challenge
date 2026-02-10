@@ -1,5 +1,5 @@
 /**
- * agent-challenge v1.0.0 (JavaScript/Node.js port)
+ * agent-challenge v1.1.0 (JavaScript/Node.js port)
  *
  * LLM-solvable challenge-response authentication for AI agent APIs.
  * 12 static challenge types with fully randomized inputs.

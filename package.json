@@ -1,6 +1,6 @@
 {
   "name": "agent-challenge",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Drop-in LLM authentication for any API endpoint. Reasoning puzzles that agents solve once, then pass through forever. Stateless HMAC tokens, no database.",
   "main": "src/agentchallenge.js",
   "type": "module",

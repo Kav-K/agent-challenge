@@ -76,49 +76,48 @@ PROVIDERS = {
 # 7. Aggressive answer normalization for comparison
 # 8. Explicit "ANSWER:" prefix extraction from verifier
 
-GENERATE_PROMPT = """You are a challenge generator for AI agent authentication. Generate ONE unique reasoning challenge.
+GENERATE_PROMPT = """You are a challenge generator for AI agent authentication. Generate ONE unique AGENTIC-LEVEL challenge — it must require MULTIPLE reasoning steps that chain together.
 
 RULES (strict):
-1. The answer MUST be a single number OR a single word (1-2 words max). Never a sentence.
+1. The answer MUST be a single number OR a short string (1-20 chars). Never a sentence.
 2. The challenge MUST have exactly ONE objectively correct answer — no ambiguity.
-3. The challenge MUST be solvable by pure reasoning — no trivia, pop culture, or world knowledge.
-4. Include "Reply with ONLY the answer, nothing else." at the end of the prompt.
-5. SHOW YOUR WORK: Before writing the JSON, solve the challenge yourself step by step to verify the answer is correct. Write your work FIRST, then the JSON on the last line.
+3. The challenge MUST require 2-4 chained steps (not just one operation).
+4. The challenge MUST be solvable by pure reasoning — no trivia, pop culture, or world knowledge.
+5. Include "Reply with ONLY the answer, nothing else." at the end of the prompt.
+6. SHOW YOUR WORK: Before writing the JSON, solve the challenge yourself step by step to verify the answer is correct. Write your work FIRST, then the JSON on the last line.
 
-ALLOWED categories (pick one randomly):
-- Arithmetic: multi-step math, order of operations, percentages
-- String manipulation: reverse strings, remove/replace characters, count letters
-- Pattern completion: number sequences with clear rules
-- Cipher/encoding: Caesar shift, letter-to-number mapping
-- Counting: count specific items in a given string
-- Sorting: alphabetize letters, sort numbers
+REQUIRED: Multi-step challenges (pick one approach randomly):
+- Chained transforms: reverse a string, then remove vowels, then take first 3 chars
+- Base conversion chain: convert binary to decimal, add N, convert back
+- Multi-step math: compute X, then take remainder mod Y, then multiply by Z
+- Letter arithmetic: sum letter values (A=1..Z=26), then apply an operation
+- String extraction + transform: take first letter of each word, then reverse, then ROT13
+- Nested operations: ((X + Y) × Z) - W where X/Y/Z/W come from string properties
+- Interleave + transform: interleave two strings char by char, then reverse
 
 FORBIDDEN (never generate):
+- Single-step challenges (must be 2+ steps)
 - Riddles, lateral thinking, "trick questions"
 - Challenges with multiple valid answers
 - Trivia or world knowledge
 - Full-sentence answers
 - Time/date/clock puzzles
-- Word association / "what am I"
 
 EXAMPLES (DO NOT reuse — generate something novel):
-Working: 8×7=56, 3×9=27, 56-27=29
-{"prompt": "What is (8 × 7) - (3 × 9)? Reply with ONLY the answer, nothing else.", "answer": "29"}
+Working: "HELLO"→reversed→"OLLEH"→remove vowels→"LLH"
+{"prompt": "Reverse the string \"HELLO\", then remove all vowels from the result. Reply with ONLY the answer, nothing else.", "answer": "LLH"}
 
-Working: ALGORITHM reversed → M-H-T-I-R-O-G-L-A
-{"prompt": "Reverse the string ALGORITHM. Reply with ONLY the answer, nothing else.", "answer": "MHTIROGLA"}
+Working: binary 1010=10, 10+7=17, 17 in binary=10001
+{"prompt": "Convert binary 1010 to decimal, add 7 to it, then convert the result back to binary. Reply with ONLY the answer, nothing else.", "answer": "10001"}
 
-Working: M-I-S-S-I-S-S-I-P-P-I, S appears at positions 4,5,7,8 → 4 times
-{"prompt": "In the string MISSISSIPPI, how many times does the letter S appear? Reply with ONLY the answer, nothing else.", "answer": "4"}
+Working: "Cat Dog Elk"→first letters→"CDE"→reversed→"EDC"→ROT13→each letter +13: E(4+13=17)=R, D(3+13=16)=Q, C(2+13=15)=P → "RQP"
+{"prompt": "Take the first letter of each word in \"Cat Dog Elk\", reverse the result, then apply ROT13. Reply with ONLY the answer, nothing else.", "answer": "RQP"}
 
-Working: H=8, E=5, L=12, P=16, sum=8+5+12+16=41... wait, let me recount. H=8, E=5, L=12, P=16. 8+5=13, 13+12=25, 25+16=41.
-{"prompt": "If A=1, B=2, ..., Z=26, what is the value of H + E + L + P? Reply with ONLY the answer, nothing else.", "answer": "41"}
+Working: ((8+5)×3)-12 = (13×3)-12 = 39-12 = 27, 27 mod 7 = 6
+{"prompt": "Compute ((8 + 5) × 3) - 12, then find the remainder when divided by 7. Reply with ONLY the answer, nothing else.", "answer": "6"}
 
-Working: Remove A,E,I,O,U from EDUCATION → D,C,T,N
-{"prompt": "Remove all vowels from the word EDUCATION. Reply with ONLY the answer, nothing else.", "answer": "DCTN"}
-
-Working: P,A,R,K,I,N,G sorted → A,G,I,K,N,P,R
-{"prompt": "Sort these letters alphabetically: P, A, R, K, I, N, G. Reply with ONLY the answer, nothing else.", "answer": "AGIKNPR"}
+Working: "SPARK"→reversed→"KRAPS"→remove vowels (A)→"KRPS"
+{"prompt": "Reverse the string \"SPARK\", then remove all vowels from the result. Reply with ONLY the answer, nothing else.", "answer": "KRPS"}
 
 Now generate a NOVEL challenge — different from the examples above. Be creative with the specific values and words you choose. Show your work first, then the JSON on the final line:"""
 

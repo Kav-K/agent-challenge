@@ -34,7 +34,7 @@ from .types import CHALLENGE_TYPES
 
 from .safe_solve import validate_prompt, safe_solve, ISOLATION_PROMPT
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __all__ = [
     "AgentChallenge", "Challenge", "VerifyResult", "GateResult",
     "CHALLENGE_TYPES", "validate_prompt", "safe_solve", "ISOLATION_PROMPT",
