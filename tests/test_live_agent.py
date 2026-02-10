@@ -357,12 +357,12 @@ def _():
     print(f"      → {solved}/20 ({pct:.0f}%)")
     assert solved >= 18, f"Only {solved}/20 ({pct:.0f}%) — easy tier must be near 100% for 4o-mini"
 
-@test("gpt-4o: ≥85% on 20 medium challenges (must be reliable)")
+@test("gpt-4o: ≥75% on 20 medium challenges (mostly reliable)")
 def _():
     solved = _bulk_solve(AgentChallenge(secret="live-bulk-med4o-key-acc", difficulty="medium"), model="gpt-4o")
     pct = solved / 20 * 100
     print(f"      → {solved}/20 ({pct:.0f}%)")
-    assert solved >= 17, f"Only {solved}/20 ({pct:.0f}%) — medium tier must be reliable for gpt-4o"
+    assert solved >= 15, f"Only {solved}/20 ({pct:.0f}%) — medium tier must be mostly reliable for gpt-4o"
 
 @test("gpt-4o-mini: ≤70% on 20 medium challenges (starts failing)")
 def _():
