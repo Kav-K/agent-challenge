@@ -40,6 +40,24 @@ jobs:
       - name: Run E2E tests
         run: PYTHONPATH=src python3 tests/test_e2e.py
 
+  live-agent-tests:
+    name: Live Agent Tests (OpenAI)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run live agent tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: PYTHONPATH=src python3 tests/test_live_agent.py
+
   js-tests:
     name: JavaScript Validation
     runs-on: ubuntu-latest
