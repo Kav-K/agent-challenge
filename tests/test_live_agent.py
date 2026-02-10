@@ -190,6 +190,10 @@ transport = "curl" if _USE_CURL else "urllib"
 print(f"\n🤖 Live Agent Tests (OpenAI API via {transport})")
 print(f"   Key: ...{OPENAI_KEY[-6:]}")
 
+# Types gpt-4o-mini reliably solves (for flow tests that need reliable solving)
+MINI_SAFE = ["simple_math", "pattern", "string_length", "first_last", "binary",
+             "ascii_value", "string_math", "word_math", "substring"]
+
 
 # ── Section 1: Full HTTP Agent Flow ───────────────────
 # These test the complete gate() cycle with a real LLM solving challenges.
@@ -284,12 +288,7 @@ def _():
 print(f"\n── gpt-4o-mini: Per-type solvability (3 attempts each) ──")
 
 # Types gpt-4o-mini reliably solves
-RELIABLE_TYPES = ["simple_math", "pattern", "string_length", "first_last", "binary",
-                  "ascii_value", "string_math", "word_math", "substring"]
-
-# Subset that gpt-4o-mini can almost always solve (for flow tests)
-MINI_SAFE = ["simple_math", "pattern", "string_length", "first_last", "binary",
-             "ascii_value", "string_math", "word_math", "substring"]
+RELIABLE_TYPES = MINI_SAFE  # alias
 
 # Types gpt-4o-mini sometimes solves (character manipulation is hard for small models)
 HARD_FOR_MINI = ["reverse_string", "counting", "rot13", "letter_position",
